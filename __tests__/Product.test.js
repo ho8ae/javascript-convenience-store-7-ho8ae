@@ -1,3 +1,5 @@
+import Product from '../src/domain/Product.js';
+
 describe("Product 클래스 테스트", () => {
   test("가격이 0 이하인 경우 예외가 발생한다", () => {
     expect(() => {

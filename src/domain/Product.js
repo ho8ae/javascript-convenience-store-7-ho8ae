@@ -12,6 +12,22 @@ class Product {
     this.#promotion = promotion;
   }
 
+  get name() {
+    return this.#name;
+  }
+
+  get price() {
+    return this.#price;
+  }
+
+  get quantity() {
+    return this.#quantity;
+  }
+
+  get promotion() {
+    return this.#promotion;
+  }
+
   validateProduct(name, price, quantity) {
     if (!name || name.trim() === "") {
       throw new Error("[ERROR] 상품명은 필수입니다.");
