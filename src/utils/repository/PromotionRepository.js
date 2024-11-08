@@ -24,6 +24,12 @@ class PromotionRepository {
       throw new Error("[ERROR] 프로모션 정보를 불러오는데 실패했습니다.");
     }
   }
+
+  findPromotion(promotionName) {
+    const promotions = this.loadPromotions();
+    return promotions.find((promotion) => promotion.name === promotionName);
+  }
+  
 }
 
 export default PromotionRepository;

@@ -35,6 +35,13 @@ class ProductRepository {
       throw new Error("[ERROR] 상품 정보를 불러오는데 실패했습니다.");
     }
   }
+
+  findProductWithPromotion(name) {
+    const products = this.loadProducts();
+    return products.find(
+      (product) => product.name === name && product.promotion,
+    );
+  }
 }
 
 export default ProductRepository;
