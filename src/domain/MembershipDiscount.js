@@ -1,4 +1,4 @@
-class MembershipCalculator {
+class MembershipDiscount {
   #DISCOUNT_RATE = 0.3; // 30% 할인
   #MAX_DISCOUNT = 8000; // 최대 8,000원
 
@@ -12,4 +12,4 @@ class MembershipCalculator {
   }
 }
 
-export default MembershipCalculator;
+export default MembershipDiscount;

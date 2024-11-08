@@ -1,6 +1,6 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
 
-class PromotionCalculator {
+class PromotionDiscount {
     #productRepository;
     #promotionRepository;
 
@@ -76,4 +76,4 @@ class PromotionCalculator {
     }
 }
 
-export default PromotionCalculator;
+export default PromotionDiscount;
