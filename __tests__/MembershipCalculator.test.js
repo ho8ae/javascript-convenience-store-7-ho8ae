@@ -1,4 +1,4 @@
-import MembershipCalculator from "../../../src/utils/calculator/MembershipCalculator.js";
+import MembershipCalculator from "../src/utils/MembershipCalculator.js"
 
 describe("MembershipCalculator 테스트", () => {
   let membershipCalculator;
