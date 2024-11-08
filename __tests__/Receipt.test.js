@@ -1,3 +1,6 @@
+import ProductRepository from "../src/utils/repository/ProductRepository.js";
+import Receipt from "../src/domain/Receipt.js";
+
 describe("Receipt 테스트", () => {
   let receipt;
   let productRepository;
@@ -15,15 +18,15 @@ describe("Receipt 테스트", () => {
 
     const result = receipt.calculatePurchase(items);
 
-    expect(result.totalAmount).toBe(7000); // 콜라 3개(3000) + 에너지바 2개(4000)
+    expect(result.totalAmount).toBe(7000);
     expect(result.items).toHaveLength(2);
     expect(result.items[0]).toEqual({
       name: "콜라",
       quantity: 3,
       amount: 3000,
+      formattedAmount: "3,000",
     });
   });
-
   test("증정 상품이 영수증에 포함된다", () => {
     const items = [{ name: "콜라", quantity: 3 }];
     const freeItems = [{ name: "콜라", quantity: 1 }];

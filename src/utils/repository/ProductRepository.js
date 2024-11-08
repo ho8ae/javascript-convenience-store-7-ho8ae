@@ -42,6 +42,15 @@ class ProductRepository {
       (product) => product.name === name && product.promotion,
     );
   }
+
+  findProduct(name) {
+    const products = this.loadProducts();
+    const product = products.find((p) => p.name === name);
+    if (!product) {
+      throw new Error("[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요.");
+    }
+    return product;
+  }
 }
 
 export default ProductRepository;
