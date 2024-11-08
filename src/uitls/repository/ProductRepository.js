@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import Product from "./Product.js";
+import Product from "../../domain/Product.js";
 
 class ProductRepository {
   #filePath = "public/products.md";

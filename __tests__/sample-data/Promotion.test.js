@@ -1,4 +1,5 @@
-import Promotion from "../src/domain/Promotion.js";
+import Promotion from '../../src/domain/Promotion.js';
+
 
 describe("Promotion 클래스 테스트", () => {
   test("프로모션 객체가 정상적으로 생성된다", () => {

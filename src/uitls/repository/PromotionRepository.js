@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import Promotion from "./Promotion.js";
+import Promotion from "../../domain/Promotion.js";
 
 class PromotionRepository {
   #filePath = "public/promotions.md";
