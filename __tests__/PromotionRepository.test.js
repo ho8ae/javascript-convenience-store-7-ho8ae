@@ -24,5 +24,4 @@ describe("PromotionRepository 테스트", () => {
       promotionRepository.loadPromotions("invalid-promotions.md");
     }).toThrow("[ERROR]");
   });
-
 });
