@@ -16,10 +16,9 @@ describe("PromotionCalculator 테스트", () => {
       promotionRepository,
     );
 
-    // 현재 날짜를 2024-01-15로 고정
     jest
       .spyOn(MissionUtils.DateTimes, "now")
-      .mockReturnValue(new Date("2024-01-15"));
+      .mockReturnValue(new Date("2024-11-08"));
   });
 
   afterEach(() => {
@@ -44,6 +43,21 @@ describe("PromotionCalculator 테스트", () => {
     });
     expect(result.discount).toBe(1800);
   });
+  test("반짝할인 프로모션이 기간 내에 적용된다", () => {
+    // 반짝할인 기간(2024-11-01 ~ 2024-11-30) 내의 날짜로 설정
+    jest
+      .spyOn(MissionUtils.DateTimes, "now")
+      .mockReturnValue(new Date("2024-11-08"));
+
+    const input = "[감자칩-2]"; // 반짝할인 1+1 프로모션
+    const result = promotionCalculator.calculatePromotion(input);
+
+    expect(result.freeItems).toContainEqual({
+      name: "감자칩",
+      quantity: 1,
+    });
+    expect(result.discount).toBe(1500); // 감자칩 1개 가격만큼 할인
+  });
   test("프로모션 기간이 아닌 경우 할인이 적용되지 않는다", () => {
     // 현재 날짜를 2024-10-15로 변경 (반짝할인 기간 이전)
     jest
@@ -63,5 +77,18 @@ describe("PromotionCalculator 테스트", () => {
 
     expect(result.freeItems).toHaveLength(0);
     expect(result.discount).toBe(0);
+  });
+  test("여러 프로모션이 동시에 적용된다", () => {
+    jest
+      .spyOn(MissionUtils.DateTimes, "now")
+      .mockReturnValue(new Date("2024-11-08"));
+
+    const input = "[콜라-3],[감자칩-2],[오렌지주스-2]";
+    const result = promotionCalculator.calculatePromotion(input);
+
+    expect(result.freeItems).toContainEqual({ name: "콜라", quantity: 1 }); // 2+1
+    expect(result.freeItems).toContainEqual({ name: "감자칩", quantity: 1 }); // 반짝할인 1+1
+    expect(result.freeItems).toContainEqual({ name: "오렌지주스", quantity: 1 }); // MD추천 1+1
+    expect(result.discount).toBe(4300); // 콜라(1000) + 감자칩(1500) + 오렌지주스(1800)
   });
 });
