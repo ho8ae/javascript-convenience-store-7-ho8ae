@@ -1,4 +1,4 @@
-import InputView from "../../src/view/InputView.js";
+import InputView from "../../src/view/IntputView";
 import { MissionUtils } from "@woowacourse/mission-utils";
 
 describe("InputView 테스트", () => {
