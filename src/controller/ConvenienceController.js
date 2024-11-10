@@ -30,38 +30,155 @@ class ConvenienceController {
   }
 
   async showProducts() {
-    const products = this.#productRepository.loadProducts();
+    const products = this.#productRepository.getProducts();
     OutputView.printProducts(products);
   }
-
   async processOrder() {
     try {
       const purchaseInput = await this.getPurchaseInput();
+      const items = this.#promotionDiscount.parseInput(purchaseInput);
+
+      // 프로모션 및 재고 확인
+      for (const item of items) {
+        const promoProduct = this.#productRepository.findProductWithPromotion(
+          item.name,
+        );
+        if (!promoProduct) continue;
+
+        const promotion = this.#promotionRepository.findPromotion(
+          promoProduct.promotion,
+        );
+        if (!promotion) continue;
+
+        // 모든 프로모션에 대해 추가 구매 가능 여부 체크
+        const { promoQuantity, normalQuantity, freeQuantity } =
+          this.#promotionDiscount.calculateNPlusK(
+            item.quantity,
+            promoProduct.quantity,
+            promotion.buy,
+            promotion.get,
+          );
+
+        // 추가 구매 제안
+        if (
+          item.quantity === promotion.buy &&
+          promoProduct.quantity >= promotion.buy + promotion.get
+        ) {
+          const answer = await InputView.readPromotionAddQuestion(
+            item.name,
+            promotion.get,
+          );
+          if (answer.toUpperCase() === "Y") {
+            item.quantity += promotion.get;
+            continue;
+          }
+        }
+        // 프로모션 미적용 수량 안내
+        else if (normalQuantity > 0) {
+          const answer = await InputView.readPromotionWarning(
+            item.name,
+            normalQuantity,
+          );
+          if (answer.toUpperCase() !== "Y") {
+            return;
+          }
+        }
+
+        item.promoQuantity = promoQuantity;
+        item.normalQuantity = normalQuantity;
+        item.freeQuantity = freeQuantity;
+      }
+
       const membershipApplied = await this.getMembershipInput();
-      await this.processPayment(purchaseInput, membershipApplied);
+
+      // 영수증 생성 및 출력
+      const promotionResult = this.#promotionDiscount.calculatePromotion(items);
+      const { totalAmount } = this.#receipt.calculatePurchase(items);
+      const membershipDiscount = membershipApplied
+        ? Math.floor(
+            Math.min((totalAmount - promotionResult.discount) * 0.3, 8000),
+          )
+        : 0;
+
+      const receipt = this.#receipt.generateReceipt(
+        items,
+        promotionResult.freeItems,
+        promotionResult.discount,
+        membershipDiscount,
+      );
+
+      this.updateInventory(items, promotionResult);
+      OutputView.printReceipt(receipt);
+
+      await this.checkAdditionalPurchase();
     } catch (error) {
+      if (error.message === "NO INPUT") {
+        return;
+      }
       OutputView.print(error.message);
-      await this.processOrder();
+      return;
     }
   }
 
-  async processPayment(purchaseInput, membershipApplied) {
-    const receipt = await this.#calculateReceipt(
-      purchaseInput,
-      membershipApplied,
-    );
-    OutputView.printReceipt(receipt);
-    await this.checkAdditionalPurchase();
+  updateInventory(items, promotionResult) {
+    // 프로모션 재고 먼저 차감
+    promotionResult.promoQuantities.forEach((quantity, name) => {
+      const promoProduct =
+        this.#productRepository.findProductWithPromotion(name);
+      if (promoProduct) {
+        this.#productRepository.updateStock(name, quantity, true);
+      }
+    });
+
+    // 일반 재고 차감
+    promotionResult.normalQuantities.forEach((quantity, name) => {
+      const normalProduct = this.#productRepository.findProduct(name);
+      if (normalProduct) {
+        this.#productRepository.updateStock(name, quantity, false);
+      }
+    });
   }
 
   async getPurchaseInput() {
     const input = await InputView.readPurchaseInput();
+
     if (!this.#isValidPurchaseFormat(input)) {
       throw new Error(
         "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요.",
       );
     }
+
+    const items = this.#promotionDiscount.parseInput(input);
+
+    for (const item of items) {
+      if (!this.#productRepository.hasProduct(item.name)) {
+        throw new Error(
+          "[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요.",
+        );
+      }
+
+      const totalStock = this.#productRepository.getTotalStock(item.name);
+      if (totalStock < item.quantity) {
+        throw new Error(
+          "[ERROR] 재고 수량을 초과하여 구매할 수 없습니다. 다시 입력해 주세요.",
+        );
+      }
+    }
+
     return input;
+  }
+
+  #getTotalStock(name) {
+    const products = this.#productRepository.getProducts();
+    const productExists = products.some((p) => p.name === name);
+
+    if (!productExists) {
+      return null;
+    }
+
+    return products
+      .filter((p) => p.name === name)
+      .reduce((sum, p) => sum + p.quantity, 0);
   }
 
   async getMembershipInput() {
@@ -76,56 +193,18 @@ class ConvenienceController {
 
   async checkAdditionalPurchase() {
     const input = await InputView.readAdditionalPurchaseInput();
-    const upperInput = input?.toUpperCase();
-
-    if (upperInput === "Y") {
-      this.#updateInventory();
+    if (input.toUpperCase() === "Y") {
       await this.start();
+    } else if (input.toUpperCase() !== "N") {
+      OutputView.print("[ERROR] Y 또는 N만 입력 가능합니다.");
+      return;
     }
-  }
-
-  #calculateReceipt(purchaseInput, membershipApplied) {
-    const items = this.#parseInput(purchaseInput);
-    const promotionResult =
-      this.#promotionDiscount.calculatePromotion(purchaseInput);
-    const { totalAmount } = this.#receipt.calculatePurchase(items);
-
-    const membershipDiscountAmount = membershipApplied
-      ? this.#membershipDiscount.calculateDiscount(
-          totalAmount - promotionResult.discount,
-        )
-      : 0;
-
-    return this.#receipt.generateReceipt(
-      items,
-      promotionResult.freeItems,
-      promotionResult.discount,
-      membershipDiscountAmount,
-    );
   }
 
   #isValidPurchaseFormat(input) {
-    const pattern = /^\[([^-\]]+)-([1-9]\d*)\]$/;
-    const items = input.split(",");
-    return items.every((item) => pattern.test(item.trim()));
-  }
-
-  #parseInput(input) {
-    const matches = input.match(/\[([^\]]+)\]/g);
-    if (!matches) {
-      throw new Error(
-        "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요.",
-      );
-    }
-
-    return matches.map((match) => {
-      const [name, quantity] = match.slice(1, -1).split("-");
-      return { name: name.trim(), quantity: Number(quantity) };
-    });
-  }
-
-  #updateInventory() {
-    this.#productRepository.loadProducts();
+    const pattern =
+      /^\[([^-\]]+)-([1-9]\d*)\](\s*,\s*\[([^-\]]+)-([1-9]\d*)\])*$/;
+    return pattern.test(input);
   }
 }
 
