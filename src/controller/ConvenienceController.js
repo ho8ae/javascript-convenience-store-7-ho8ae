@@ -20,13 +20,13 @@ class ConvenienceController {
     this.#promotionRepository = new PromotionRepository();
     this.#promotionDiscount = new PromotionDiscount(
       this.#productRepository,
-      this.#promotionRepository
+      this.#promotionRepository,
     );
     this.#membershipDiscount = new MembershipDiscount();
     this.#receipt = new Receipt(this.#productRepository);
     this.#productInventory = new ProductInventory(
       this.#productRepository,
-      this.#promotionRepository
+      this.#promotionRepository,
     );
   }
 
@@ -47,8 +47,10 @@ class ConvenienceController {
       const items = InputValidator.parseInput(purchaseInput);
 
       for (const item of items) {
-        const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
-        const promotion = promoProduct 
+        const promoProduct = this.#productRepository.findProductWithPromotion(
+          item.name,
+        );
+        const promotion = promoProduct
           ? this.#promotionRepository.findPromotion(promoProduct.promotion)
           : null;
 
@@ -57,17 +59,46 @@ class ConvenienceController {
             item.quantity,
             promoProduct.quantity,
             promotion.buy,
-            promotion.get
+            promotion.get,
+            promoProduct.promotion,
           );
 
-          if (result.needsConfirmation) {
-            const answer = await InputView.readPromotionWarning(item.name, result.nonPromoQuantity);
-            if (answer.toUpperCase() !== "Y") {
-              return this.#processPurchase();
+          if (promoProduct.promotion === "MD추천상품" && item.quantity === 1) {
+            const answer = await InputView.readPromotionAddQuestion(
+              item.name,
+              1,
+            );
+            if (answer.toUpperCase() === "Y") {
+              item.quantity = 2; // 총 2개로 수정 (1개 구매 + 1개 증정)
+              Object.assign(item, result);
+            } else {
+              item.quantity = 1; // 1개만 구매
+              item.promoQuantity = 1;
+              item.normalQuantity = 0;
+              item.freeQuantity = 0;
             }
+          } else if (result.needsConfirmation) {
+            const answer = await InputView.readPromotionWarning(
+              item.name,
+              result.nonPromoQuantity,
+            );
+            if (answer.toUpperCase() !== "Y") {
+              // 프로모션 적용 가능한 수량만 구매
+              item.quantity -= result.nonPromoQuantity;
+              const newResult = this.#promotionDiscount.calculateNPlusK(
+                item.quantity,
+                promoProduct.quantity,
+                promotion.buy,
+                promotion.get,
+                promoProduct.promotion,
+              );
+              Object.assign(item, newResult);
+            } else {
+              Object.assign(item, result);
+            }
+          } else {
+            Object.assign(item, result);
           }
-
-          Object.assign(item, result);
         }
       }
 
@@ -75,7 +106,7 @@ class ConvenienceController {
       const promotionResult = this.#promotionDiscount.calculatePromotion(items);
       const { totalAmount } = this.#receipt.calculatePurchase(items);
       const amountAfterPromotion = totalAmount - promotionResult.discount;
-      const membershipDiscount = membershipApplied 
+      const membershipDiscount = membershipApplied
         ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
         : 0;
 
@@ -83,7 +114,7 @@ class ConvenienceController {
         items,
         promotionResult.freeItems,
         promotionResult.discount,
-        membershipDiscount
+        membershipDiscount,
       );
 
       this.#productInventory.decreaseStock(items);
@@ -94,7 +125,6 @@ class ConvenienceController {
         await this.#showProducts();
         return this.#processPurchase();
       }
-
     } catch (error) {
       if (error.message === "NO INPUT") {
         return;
