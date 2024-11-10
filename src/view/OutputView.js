@@ -10,61 +10,42 @@ class OutputView {
     this.print("현재 보유하고 있는 상품입니다.\n");
 
     products.forEach((product) => {
-      const { name, price, quantity, promotion } = product;
-      const stock = quantity === 0 ? "재고 없음" : `${quantity}개`;
-      const promotionText = promotion ? ` ${promotion}` : "";
+      const stockText =
+        product.quantity === 0 ? "재고 없음" : `${product.quantity}개`;
+      const promotionText = product.promotion ? ` ${product.promotion}` : "";
 
       this.print(
-        `- ${name} ${this.#formatAmount(price)}원 ${stock}${promotionText}`,
+        `- ${product.name} ${product.price.toLocaleString()}원 ${stockText}${promotionText}`,
       );
     });
+    this.print("");
   }
-
   static printReceipt(receipt) {
-    this.#printReceiptHeader();
-    this.#printPurchaseItems(receipt.items);
+    this.print("\n==============W 편의점================");
+    this.print("상품명\t\t수량\t금액");
+
+    receipt.items.forEach((item) => {
+      this.print(`${item.name}\t\t${item.quantity}\t${item.formattedAmount}`);
+    });
 
     if (receipt.freeItems.length > 0) {
-      this.#printFreeItems(receipt.freeItems);
+      this.print("=============증\t정===============");
+      receipt.freeItems.forEach((item) => {
+        this.print(`${item.name}\t\t${item.quantity}`);
+      });
     }
 
-    this.#printAmountDetails(receipt);
-  }
+    // 전체 구매 수량 계산
+    const totalQuantity = receipt.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
 
-  static #printReceiptHeader() {
-    this.print("==============W 편의점================");
-    this.print("상품명\t\t수량\t금액");
-  }
-
-  static #printPurchaseItems(items) {
-    items.forEach((item) => {
-      this.print(
-        `${item.name}\t\t${item.quantity}\t${this.#formatAmount(item.amount)}`,
-      );
-    });
-  }
-
-  static #printFreeItems(freeItems) {
-    this.print("=============증\t정===============");
-    freeItems.forEach((item) => {
-      this.print(`${item.name}\t\t${item.quantity}`);
-    });
-  }
-
-  static #printAmountDetails(receipt) {
     this.print("====================================");
-    this.print(`총구매액\t\t\t${this.#formatAmount(receipt.totalAmount)}`);
-    this.print(
-      `행사할인\t\t\t-${this.#formatAmount(receipt.promotionDiscount)}`,
-    );
-    this.print(
-      `멤버십할인\t\t\t-${this.#formatAmount(receipt.membershipDiscount)}`,
-    );
-    this.print(`내실돈\t\t\t${this.#formatAmount(receipt.finalAmount)}`);
-  }
-
-  static #formatAmount(amount) {
-    return amount.toLocaleString();
+    this.print(`총구매액\t\t${totalQuantity}\t${receipt.formattedTotalAmount}`);
+    this.print(`행사할인\t\t\t-${receipt.formattedPromotionDiscount}`);
+    this.print(`멤버십할인\t\t\t-${receipt.formattedMembershipDiscount}`);
+    this.print(`내실돈\t\t\t ${receipt.formattedFinalAmount}`);
   }
 }
 
