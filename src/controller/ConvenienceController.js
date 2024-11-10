@@ -94,9 +94,11 @@ class ConvenienceController {
       // 영수증 생성 및 출력
       const promotionResult = this.#promotionDiscount.calculatePromotion(items);
       const { totalAmount } = this.#receipt.calculatePurchase(items);
+
       const membershipDiscount = membershipApplied
-        ? Math.floor(
-            Math.min((totalAmount - promotionResult.discount) * 0.3, 8000),
+        ? this.#membershipDiscount.calculateDiscountAmount(
+            totalAmount,
+            promotionResult.discount,
           )
         : 0;
 
