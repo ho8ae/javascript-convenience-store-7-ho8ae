@@ -1,79 +1,109 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
 
 class PromotionDiscount {
-    #productRepository;
-    #promotionRepository;
+  #productRepository;
+  #promotionRepository;
 
-    constructor(productRepository, promotionRepository) {
-        this.#productRepository = productRepository;
-        this.#promotionRepository = promotionRepository;
-    }
+  constructor(productRepository, promotionRepository) {
+    this.#productRepository = productRepository;
+    this.#promotionRepository = promotionRepository;
+  }
 
-    calculatePromotion(input) {
-        const purchaseItems = this.parseInput(input);
-        const result = {
-            freeItems: [],
-            discount: 0
-        };
+  calculatePromotion(items) {
+    const result = {
+      freeItems: [],
+      discount: 0,
+      promoQuantities: new Map(),
+      normalQuantities: new Map(),
+    };
 
-        purchaseItems.forEach(item => {
-            const promotionResult = this.calculateItemPromotion(item);
-            if (promotionResult.freeQuantity > 0) {
-                result.freeItems.push({
-                    name: item.name,
-                    quantity: promotionResult.freeQuantity
-                });
-                result.discount += promotionResult.discount;
-            }
-        });
+    items.forEach((item) => {
+      const promoProduct = this.#productRepository.findProductWithPromotion(
+        item.name,
+      );
+      const promotion = promoProduct
+        ? this.#promotionRepository.findPromotion(promoProduct.promotion)
+        : null;
 
-        return result;
-    }
+      if (!promoProduct || !promotion || !this.isValidPromotion(promotion)) {
+        result.normalQuantities.set(item.name, item.quantity);
+        return;
+      }
 
-    calculateItemPromotion(item) {
-        const product = this.#productRepository.findProductWithPromotion(item.name);
-        if (!product || !product.promotion) {
-            return { freeQuantity: 0, discount: 0 };
-        }
+      const { promoQuantity, normalQuantity, freeQuantity } =
+        this.calculateNPlusK(
+          item.quantity,
+          promoProduct.quantity,
+          promotion.buy, // N
+          promotion.get, // K
+        );
 
-        const promotion = this.#promotionRepository.findPromotion(product.promotion);
-        if (!promotion || !this.isValidPromotion(promotion)) {
-            return { freeQuantity: 0, discount: 0 };
-        }
+      if (promoQuantity > 0) {
+        result.promoQuantities.set(item.name, promoQuantity + freeQuantity);
+        result.freeItems.push({ name: item.name, quantity: freeQuantity });
+        result.discount += promoProduct.price * freeQuantity;
+      }
 
-        return this.applyPromotion(item, product, promotion);
-    }
+      if (normalQuantity > 0) {
+        result.normalQuantities.set(item.name, normalQuantity);
+      }
+    });
 
-    isValidPromotion(promotion) {
-        const currentDate = MissionUtils.DateTimes.now();
-        const startDate = new Date(promotion.startDate);
-        const endDate = new Date(promotion.endDate);
-        
-        return currentDate >= startDate && currentDate <= endDate;
-    }
+    return result;
+  }
+  calculateNPlusK(orderQuantity, promoStock, n, k) {
+    // 1. Calculate the maximum number of sets that can be applied within the limits of promoStock and orderQuantity
+    const maxSetsFromStock = Math.floor(promoStock / n); // Promo sets based on available stock
+    const maxSetsFromOrder = Math.floor(orderQuantity / (n + k)); // Promo sets based on ordered quantity
+    const completeSets = Math.min(maxSetsFromStock, maxSetsFromOrder, 2); // Limited to two sets
 
-    applyPromotion(item, product, promotion) {
-        const sets = Math.floor(item.quantity / promotion.buy);
-        if (sets === 0) return { freeQuantity: 0, discount: 0 };
+    // 2. Calculate quantities for promo and free items
+    const promoQuantity = completeSets * n; // Promo quantity (e.g., 2 items per set)
+    const freeQuantity = completeSets * k; // Free quantity (e.g., 1 item per set)
 
-        const freeQuantity = promotion.get;  // 각 세트당 1개씩만 증정
-        const discount = freeQuantity * product.price;
+    // 3. Remaining items outside promo criteria
+    const remainingQuantity = orderQuantity - (promoQuantity + freeQuantity);
 
-        return { freeQuantity, discount };
-    }
+    return {
+      promoQuantity: promoQuantity, // Quantity covered by promotion
+      normalQuantity: Math.max(remainingQuantity, 0), // Quantity not covered by promotion
+      freeQuantity: freeQuantity, // Free items from promotion
+    };
+  }
 
-    parseInput(input) {
-        const matches = input.match(/\[([^\]]+)\]/g);
-        if (!matches) return [];
+  isValidPromotion(promotion) {
+    const currentDate = MissionUtils.DateTimes.now();
+    return (
+      currentDate >= new Date(promotion.startDate) &&
+      currentDate <= new Date(promotion.endDate)
+    );
+  }
 
-        return matches.map(match => {
-            const [name, quantity] = match.slice(1, -1).split('-');
-            return {
-                name: name.trim(),
-                quantity: Number(quantity)
-            };
-        });
-    }
+  parseInput(input) {
+    if (Array.isArray(input)) return input;
+
+    const matches = input.match(/\[([^\]]+)\]/g) || [];
+    return matches.map((match) => {
+      const [name, quantity] = match
+        .slice(1, -1)
+        .split("-")
+        .map((s) => s.trim());
+      return {
+        name,
+        quantity: parseInt(quantity),
+      };
+    });
+  }
+
+  calculateNonPromotionQuantity(item, product, promotion) {
+    if (!product || !promotion) return item.quantity;
+
+    const setSize = promotion.buy + promotion.get;
+    const maxSets = Math.floor(product.quantity / setSize);
+    const maxPromoQuantity = maxSets * promotion.buy;
+
+    return Math.max(0, item.quantity - maxPromoQuantity);
+  }
 }
 
 export default PromotionDiscount;
