@@ -1,5 +1,3 @@
-import Product from "./Product.js";
-
 class ProductInventory {
   #productRepository;
   #inventory;
@@ -19,29 +17,31 @@ class ProductInventory {
   }
 
   decreaseStock(items) {
-    const updatedProducts = this.#productRepository
-      .getProducts()
-      .map((product) => {
-        const item = items.find((i) => i.name === product.name);
-        if (!item) return product;
+    items.forEach((item) => {
+      const promoKey = this.#createInventoryKey(item.name, true);
+      const normalKey = this.#createInventoryKey(item.name, false);
 
-        const remainingQuantity = Math.max(0, product.quantity - item.quantity);
-        return new Product(
-          product.name,
-          product.price,
-          remainingQuantity,
-          product.promotion,
-        );
-      });
+      let promoStock = this.#inventory.get(promoKey) || 0;
+      let normalStock = this.#inventory.get(normalKey) || 0;
 
-    this.#productRepository.updateProducts(updatedProducts);
-    this.initializeStock();
-  }
+      if (item.quantity > promoStock + normalStock) {
+        throw new Error("[ERROR] 재고 수량을 초과하여 구매할 수 없습니다.");
+      }
 
-  #decreaseSpecificStock(name, quantity, isPromotion) {
-    const key = this.#createInventoryKey(name, isPromotion);
-    const currentStock = this.#inventory.get(key) || 0;
-    this.#inventory.set(key, Math.max(0, currentStock - quantity));
+      let remainingQuantity = item.quantity;
+
+      // 프로모션 재고부터 차감
+      if (promoStock > 0) {
+        const promoDecrease = Math.min(promoStock, remainingQuantity);
+        this.#inventory.set(promoKey, promoStock - promoDecrease);
+        remainingQuantity -= promoDecrease;
+      }
+
+      // 일반 재고 차감
+      if (remainingQuantity > 0) {
+        this.#inventory.set(normalKey, normalStock - remainingQuantity);
+      }
+    });
   }
 
   #createInventoryKey(name, promotion) {

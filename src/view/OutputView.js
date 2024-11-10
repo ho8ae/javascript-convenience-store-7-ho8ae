@@ -15,17 +15,19 @@ class OutputView {
       const promotionText = product.promotion ? ` ${product.promotion}` : "";
 
       this.print(
-        `- ${product.name} ${product.price.toLocaleString()}원 ${stockText}${promotionText}`,
+        `- ${product.name} ${product.price.toLocaleString()}원 ${stockText}${promotionText}`
       );
     });
     this.print("");
   }
+
   static printReceipt(receipt) {
     this.print("\n==============W 편의점================");
     this.print("상품명\t\t수량\t금액");
 
     receipt.items.forEach((item) => {
-      this.print(`${item.name}\t\t${item.quantity}\t${item.formattedAmount}`);
+      const formattedAmount = item.formattedAmount || "0"; // undefined 방지
+      this.print(`${item.name}\t\t${item.quantity}\t${formattedAmount}`);
     });
 
     if (receipt.freeItems.length > 0) {
@@ -35,17 +37,16 @@ class OutputView {
       });
     }
 
-    // 전체 구매 수량 계산
     const totalQuantity = receipt.items.reduce(
       (sum, item) => sum + item.quantity,
-      0,
+      0
     );
 
     this.print("====================================");
-    this.print(`총구매액\t\t${totalQuantity}\t${receipt.formattedTotalAmount}`);
-    this.print(`행사할인\t\t\t-${receipt.formattedPromotionDiscount}`);
-    this.print(`멤버십할인\t\t\t-${receipt.formattedMembershipDiscount}`);
-    this.print(`내실돈\t\t\t ${receipt.formattedFinalAmount}`);
+    this.print(`총구매액\t\t${totalQuantity}\t${receipt.formattedTotalAmount || "0"}`);
+    this.print(`행사할인\t\t\t-${receipt.formattedPromotionDiscount || "0"}`);
+    this.print(`멤버십할인\t\t\t-${receipt.formattedMembershipDiscount || "0"}`);
+    this.print(`내실돈\t\t\t ${receipt.formattedFinalAmount || "0"}`);
   }
 }
 

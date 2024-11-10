@@ -57,6 +57,10 @@ class ProductRepository {
     return this.#products;
   }
 
+  updateProducts(updatedProducts) {
+    this.#products = updatedProducts;
+  }
+
   updateStock(name, quantity, isPromotion) {
     this.#products = this.#products.map((product) => {
       if (

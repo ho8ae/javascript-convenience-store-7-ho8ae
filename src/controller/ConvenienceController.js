@@ -90,8 +90,7 @@ class ConvenienceController {
       const membershipApplied = await this.getMembershipInput();
 
       const promotionResult = this.#promotionDiscount.calculatePromotion(items);
-      const { totalAmount, formattedTotalAmount } =
-        this.#receipt.calculatePurchase(items);
+      const { totalAmount } = this.#receipt.calculatePurchase(items);
 
       const membershipDiscount = membershipApplied
         ? this.#membershipDiscount.calculateDiscountAmount(
