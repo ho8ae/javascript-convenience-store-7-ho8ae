@@ -44,10 +44,7 @@ class Promotion {
     if (isNaN(get) || get <= 0) {
       throw new Error("[ERROR] 증정 수량은 0보다 커야 합니다.");
     }
-    if (
-      !this.isValidDateFormat(startDate) ||
-      !this.isValidDateFormat(endDate)
-    ) {
+    if (!this.isValidDateFormat(startDate) || !this.isValidDateFormat(endDate)) {
       throw new Error("[ERROR] 날짜 형식이 올바르지 않습니다.");
     }
   }
