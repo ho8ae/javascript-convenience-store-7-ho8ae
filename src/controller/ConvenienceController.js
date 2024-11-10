@@ -45,31 +45,26 @@ class ConvenienceController {
     try {
       const purchaseInput = await this.#getPurchaseInput();
       const items = InputValidator.parseInput(purchaseInput);
-
+  
       for (const item of items) {
-        const promoProduct = this.#productRepository.findProductWithPromotion(
-          item.name,
-        );
-        const promotion = promoProduct
+        const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
+        const promotion = promoProduct 
           ? this.#promotionRepository.findPromotion(promoProduct.promotion)
           : null;
-
-        if (promotion) {
-          const result = this.#promotionDiscount.calculateNPlusK(
-            item.quantity,
-            promoProduct.quantity,
-            promotion.buy,
-            promotion.get,
-            promoProduct.promotion,
-          );
-
-          if (promoProduct.promotion === "MD추천상품" && item.quantity === 1) {
-            const answer = await InputView.readPromotionAddQuestion(
-              item.name,
-              1,
-            );
+  
+        if (promotion && this.#promotionDiscount.isValidPromotion(promotion)) {  // 프로모션 기간 체크 추가
+          // MD추천상품과 반짝할인 모두 1+1 처리
+          if ((promoProduct.promotion === "MD추천상품" || promoProduct.promotion === "반짝할인") && item.quantity === 1) {
+            const answer = await InputView.readPromotionAddQuestion(item.name, 1);
             if (answer.toUpperCase() === "Y") {
               item.quantity = 2; // 총 2개로 수정 (1개 구매 + 1개 증정)
+              const result = this.#promotionDiscount.calculateNPlusK(
+                item.quantity,
+                promoProduct.quantity,
+                promotion.buy,
+                promotion.get,
+                promoProduct.promotion
+              );
               Object.assign(item, result);
             } else {
               item.quantity = 1; // 1개만 구매
@@ -77,54 +72,65 @@ class ConvenienceController {
               item.normalQuantity = 0;
               item.freeQuantity = 0;
             }
-          } else if (result.needsConfirmation) {
-            const answer = await InputView.readPromotionWarning(
-              item.name,
-              result.nonPromoQuantity,
+          } else {
+            // 2+1 등 다른 프로모션 처리
+            const result = this.#promotionDiscount.calculateNPlusK(
+              item.quantity,
+              promoProduct.quantity,
+              promotion.buy,
+              promotion.get,
+              promoProduct.promotion
             );
-            if (answer.toUpperCase() !== "Y") {
-              // 프로모션 적용 가능한 수량만 구매
-              item.quantity -= result.nonPromoQuantity;
-              const newResult = this.#promotionDiscount.calculateNPlusK(
-                item.quantity,
-                promoProduct.quantity,
-                promotion.buy,
-                promotion.get,
-                promoProduct.promotion,
+  
+            if (result.needsConfirmation) {
+              const answer = await InputView.readPromotionWarning(
+                item.name,
+                result.nonPromoQuantity
               );
-              Object.assign(item, newResult);
+              if (answer.toUpperCase() !== "Y") {
+                item.quantity -= result.nonPromoQuantity;
+                const newResult = this.#promotionDiscount.calculateNPlusK(
+                  item.quantity,
+                  promoProduct.quantity,
+                  promotion.buy,
+                  promotion.get,
+                  promoProduct.promotion
+                );
+                Object.assign(item, newResult);
+              } else {
+                Object.assign(item, result);
+              }
             } else {
               Object.assign(item, result);
             }
-          } else {
-            Object.assign(item, result);
           }
         }
       }
-
+  
       const membershipApplied = await this.#getMembershipInput();
       const promotionResult = this.#promotionDiscount.calculatePromotion(items);
       const { totalAmount } = this.#receipt.calculatePurchase(items);
       const amountAfterPromotion = totalAmount - promotionResult.discount;
-      const membershipDiscount = membershipApplied
+      const membershipDiscount = membershipApplied 
         ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
         : 0;
-
+  
       const receipt = this.#receipt.generateReceipt(
         items,
         promotionResult.freeItems,
         promotionResult.discount,
-        membershipDiscount,
+        membershipDiscount
       );
-
+  
       this.#productInventory.decreaseStock(items);
       OutputView.printReceipt(receipt);
-
+  
       const continueOrder = await this.#checkAdditionalPurchase();
       if (continueOrder) {
         await this.#showProducts();
         return this.#processPurchase();
       }
+  
     } catch (error) {
       if (error.message === "NO INPUT") {
         return;
