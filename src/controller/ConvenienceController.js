@@ -6,173 +6,122 @@ import PromotionDiscount from "../domain/PromotionDiscount.js";
 import MembershipDiscount from "../domain/MembershipDiscount.js";
 import Receipt from "../domain/Receipt.js";
 import InputValidator from "../utils/InputValidator.js";
-
+import ProductInventory from "../domain/ProductInventory.js";
 class ConvenienceController {
   #productRepository;
   #promotionRepository;
   #promotionDiscount;
   #membershipDiscount;
   #receipt;
+  #productInventory;
 
   constructor() {
     this.#productRepository = new ProductRepository();
     this.#promotionRepository = new PromotionRepository();
     this.#promotionDiscount = new PromotionDiscount(
       this.#productRepository,
-      this.#promotionRepository,
+      this.#promotionRepository
     );
     this.#membershipDiscount = new MembershipDiscount();
     this.#receipt = new Receipt(this.#productRepository);
+    this.#productInventory = new ProductInventory(
+      this.#productRepository,
+      this.#promotionRepository
+    );
   }
 
   async start() {
-    await this.showProducts();
-    await this.processOrder();
+    this.#productInventory.initializeStock();
+    await this.#showProducts();
+    await this.#processPurchase();
   }
 
-  async showProducts() {
+  async #showProducts() {
     const products = this.#productRepository.getProducts();
     OutputView.printProducts(products);
   }
 
-  async processOrder() {
+  async #processPurchase() {
     try {
-      const purchaseInput = await this.getPurchaseInput();
+      const purchaseInput = await this.#getPurchaseInput();
       const items = InputValidator.parseInput(purchaseInput);
 
-      // 프로모션 및 재고 확인
       for (const item of items) {
-        const promoProduct = this.#productRepository.findProductWithPromotion(
-          item.name,
-        );
-        if (!promoProduct) continue;
+        const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
+        const promotion = promoProduct 
+          ? this.#promotionRepository.findPromotion(promoProduct.promotion)
+          : null;
 
-        const promotion = this.#promotionRepository.findPromotion(
-          promoProduct.promotion,
-        );
-        if (!promotion) continue;
-
-        const { promoQuantity, normalQuantity, freeQuantity } =
-          this.#promotionDiscount.calculateNPlusK(
+        if (promotion) {
+          const result = this.#promotionDiscount.calculateNPlusK(
             item.quantity,
             promoProduct.quantity,
             promotion.buy,
-            promotion.get,
+            promotion.get
           );
 
-        if (
-          item.quantity === promotion.buy &&
-          promoProduct.quantity >= promotion.buy + promotion.get
-        ) {
-          const answer = await InputView.readPromotionAddQuestion(
-            item.name,
-            promotion.get,
-          );
-          if (answer.toUpperCase() === "Y") {
-            item.quantity += promotion.get;
-            continue;
+          if (result.needsConfirmation) {
+            const answer = await InputView.readPromotionWarning(item.name, result.nonPromoQuantity);
+            if (answer.toUpperCase() !== "Y") {
+              return this.#processPurchase();
+            }
           }
-        } else if (normalQuantity > 0) {
-          const answer = await InputView.readPromotionWarning(
-            item.name,
-            normalQuantity,
-          );
-          if (answer.toUpperCase() !== "Y") {
-            return;
-          }
+
+          Object.assign(item, result);
         }
-
-        item.promoQuantity = promoQuantity;
-        item.normalQuantity = normalQuantity;
-        item.freeQuantity = freeQuantity;
       }
 
-      const membershipApplied = await this.getMembershipInput();
-
+      const membershipApplied = await this.#getMembershipInput();
       const promotionResult = this.#promotionDiscount.calculatePromotion(items);
       const { totalAmount } = this.#receipt.calculatePurchase(items);
-
-      const membershipDiscount = membershipApplied
-        ? this.#membershipDiscount.calculateDiscountAmount(
-            totalAmount,
-            promotionResult.discount,
-          )
+      const amountAfterPromotion = totalAmount - promotionResult.discount;
+      const membershipDiscount = membershipApplied 
+        ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
         : 0;
 
       const receipt = this.#receipt.generateReceipt(
         items,
         promotionResult.freeItems,
         promotionResult.discount,
-        membershipDiscount,
+        membershipDiscount
       );
 
-      this.updateInventory(items, promotionResult);
+      this.#productInventory.decreaseStock(items);
       OutputView.printReceipt(receipt);
 
-      await this.checkAdditionalPurchase();
+      const continueOrder = await this.#checkAdditionalPurchase();
+      if (continueOrder) {
+        await this.#showProducts();
+        return this.#processPurchase();
+      }
+
     } catch (error) {
       if (error.message === "NO INPUT") {
         return;
       }
       OutputView.print(error.message);
-      return;
+      return this.#processPurchase();
     }
   }
 
-  async getPurchaseInput() {
-    try {
-      const input = await InputView.readPurchaseInput();
-      InputValidator.validatePurchaseFormat(input);
-      InputValidator.validateProduct(input, this.#productRepository);
-      InputValidator.validateStock(input, this.#productRepository);
-      return input;
-    } catch (error) {
-      OutputView.print(error.message);
-      return this.getPurchaseInput();
-    }
+  async #getPurchaseInput() {
+    const input = await InputView.readPurchaseInput();
+    InputValidator.validatePurchaseFormat(input);
+    InputValidator.validateProduct(input, this.#productRepository);
+    InputValidator.validateStock(input, this.#productRepository);
+    return input;
   }
 
-  async getMembershipInput() {
-    try {
-      const input = await InputView.readMembershipInput();
-      InputValidator.validateMembershipInput(input);
-      return input.toUpperCase() === "Y";
-    } catch (error) {
-      OutputView.print(error.message);
-      return this.getMembershipInput();
-    }
+  async #getMembershipInput() {
+    const input = await InputView.readMembershipInput();
+    InputValidator.validateMembershipInput(input);
+    return input.toUpperCase() === "Y";
   }
 
-  async checkAdditionalPurchase() {
-    try {
-      const input = await InputView.readAdditionalPurchaseInput();
-      InputValidator.validateMembershipInput(input); // 'Y' 또는 'N' 검증
-      if (input.toUpperCase() === "Y") {
-        await this.start();
-      } else if (input.toUpperCase() === "N") {
-        OutputView.print("구매를 종료합니다. 감사합니다.");
-      }
-    } catch (error) {
-      OutputView.print(error.message);
-      return this.checkAdditionalPurchase();
-    }
-  }
-
-  updateInventory(items, promotionResult) {
-    promotionResult.promoQuantities.forEach((quantity, name) => {
-      const promoProduct =
-        this.#productRepository.findProductWithPromotion(name);
-      if (promoProduct) {
-        this.#productRepository.updateStock(name, quantity, true);
-      }
-    });
-
-    promotionResult.normalQuantities.forEach((quantity, name) => {
-      const normalProduct = this.#productRepository.findProduct(name);
-      if (normalProduct) {
-        this.#productRepository.updateStock(name, quantity, false);
-      }
-    });
+  async #checkAdditionalPurchase() {
+    const input = await InputView.readAdditionalPurchaseInput();
+    InputValidator.validateMembershipInput(input);
+    return input.toUpperCase() === "Y";
   }
 }
 
