@@ -1,4 +1,4 @@
-import ProductRepository from "../../src/uitls/repository/ProductRepository.js";
+import ProductRepository from "../../src/utils/repository/ProductRepository.js";
 
 describe("ProductRepository 테스트", () => {
   let productRepository;

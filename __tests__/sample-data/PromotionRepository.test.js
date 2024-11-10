@@ -1,4 +1,4 @@
-import PromotionRepository from "../../src/uitls/repository/PromotionRepository.js";
+import PromotionRepository from "../../src/utils/repository/PromotionRepository.js";
 
 describe("PromotionRepository 테스트", () => {
   let promotionRepository;
