@@ -1,6 +1,6 @@
 class InputValidator {
   static isValidPurchaseFormat(input) {
-    const itemPattern = /^\[([^-\]]+)-([1-9]\d*)\]$/;
+    const itemPattern = /^\[([^\-\]]+)-([1-9]\d*)\]$/;
     const items = input.split(",");
 
     return items.every((item) => {
@@ -12,7 +12,7 @@ class InputValidator {
   static validatePurchaseFormat(input) {
     if (!this.isValidPurchaseFormat(input)) {
       throw new Error(
-        "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요.",
+        "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요."
       );
     }
   }
@@ -20,19 +20,18 @@ class InputValidator {
   static parseInput(input) {
     return input.split(",").map((item) => {
       const trimmedItem = item.trim();
-      // 먼저 하이픈의 위치를 찾아서 검사
-      const firstHyphenIndex = trimmedItem.indexOf('-');
-      const lastHyphenIndex = trimmedItem.lastIndexOf('-');
-      
+      const firstHyphenIndex = trimmedItem.indexOf("-");
+      const lastHyphenIndex = trimmedItem.lastIndexOf("-");
+
       if (firstHyphenIndex !== lastHyphenIndex) {
         throw new Error("[ERROR] 잘못된 입력입니다. 다시 입력해 주세요.");
       }
 
-      const matches = trimmedItem.match(/^\[([^-\]]+)-(-?\d*\.?\d*)\]$/);
+      const matches = trimmedItem.match(/^\[([^\-\]]+)-(-?\d*\.?\d*)\]$/);
 
       if (!matches) {
         throw new Error(
-          "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요.",
+          "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요."
         );
       }
 
@@ -67,7 +66,7 @@ class InputValidator {
       const productExists = allProducts.some((p) => p.name === name);
       if (!productExists) {
         throw new Error(
-          "[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요.",
+          "[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요."
         );
       }
     });
@@ -81,10 +80,17 @@ class InputValidator {
       const product = allProducts.find((p) => p.name === name);
       if (product && product.quantity < quantity) {
         throw new Error(
-          "[ERROR] 재고 수량을 초과하여 구매할 수 없습니다. 다시 입력해 주세요.",
+          "[ERROR] 재고 수량을 초과하여 구매할 수 없습니다. 다시 입력해 주세요."
         );
       }
     });
+  }
+
+  static validateMembershipInput(input) {
+    const upperInput = input?.toUpperCase();
+    if (upperInput !== "Y" && upperInput !== "N") {
+      throw new Error("[ERROR] Y 또는 N만 입력 가능합니다.");
+    }
   }
 }
 
