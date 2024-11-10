@@ -63,7 +63,7 @@ const runExceptions = async ({
 
   // then
   expect(logSpy).toHaveBeenCalledWith(
-    expect.stringContaining(expectedErrorMessage),
+    expect.stringContaining(expectedErrorMessage)
   );
 };
 
@@ -87,7 +87,7 @@ const run = async ({
   if (expectedIgnoringWhiteSpaces.length > 0) {
     expectLogContainsWithoutSpacesAndEquals(
       output,
-      expectedIgnoringWhiteSpaces,
+      expectedIgnoringWhiteSpaces
     );
   }
   if (expected.length > 0) {

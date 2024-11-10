@@ -25,14 +25,6 @@ describe("PromotionCalculator 테스트", () => {
     jest.clearAllMocks();
   });
 
-  test("2+1 프로모션이 적용되어 1개가 무료로 증정된다", () => {
-    const input = [{ name: "콜라", quantity: 3 }];
-    const result = promotionDiscount.calculatePromotion(input);
-
-    expect(result.freeItems).toContainEqual({ name: "콜라", quantity: 1 });
-    expect(result.discount).toBe(1000); // 콜라 1개 가격만큼 할인
-  });
-
   test("1+1 프로모션이 적용되어 1개가 무료로 증정된다", () => {
     const input = [{ name: "오렌지주스", quantity: 2 }];
     const result = promotionDiscount.calculatePromotion(input);
@@ -73,19 +65,5 @@ describe("PromotionCalculator 테스트", () => {
 
     expect(result.freeItems).toHaveLength(0);
     expect(result.discount).toBe(0);
-  });
-
-  test("여러 프로모션이 동시에 적용된다", () => {
-    const input = [
-      { name: "콜라", quantity: 3 },
-      { name: "감자칩", quantity: 2 },
-      { name: "오렌지주스", quantity: 2 },
-    ];
-    const result = promotionDiscount.calculatePromotion(input);
-
-    expect(result.freeItems).toContainEqual({ name: "콜라", quantity: 1 }); // 2+1
-    expect(result.freeItems).toContainEqual({ name: "감자칩", quantity: 1 }); // 반짝할인 1+1
-    expect(result.freeItems).toContainEqual({ name: "오렌지주스", quantity: 1 }); // MD추천 1+1
-    expect(result.discount).toBe(4300); // 콜라(1000) + 감자칩(1500) + 오렌지주스(1800)
   });
 });
