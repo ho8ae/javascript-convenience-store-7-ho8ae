@@ -1,3 +1,5 @@
+import Product from "./Product.js";
+
 class ProductInventory {
   #productRepository;
   #inventory;
@@ -16,57 +18,48 @@ class ProductInventory {
     });
   }
 
-  #createInventoryKey(name, promotion) {
-    return promotion ? `${name}_promotion` : `${name}_normal`;
+  decreaseStock(items) {
+    const updatedProducts = this.#productRepository
+      .getProducts()
+      .map((product) => {
+        const item = items.find((i) => i.name === product.name);
+        if (!item) return product;
+
+        const remainingQuantity = Math.max(0, product.quantity - item.quantity);
+        return new Product(
+          product.name,
+          product.price,
+          remainingQuantity,
+          product.promotion,
+        );
+      });
+
+    this.#productRepository.updateProducts(updatedProducts);
+    this.initializeStock();
   }
 
-  decreaseStock(items, usePromotion = false) {
-    items.forEach((item) => {
-      const { name, quantity } = item;
-      const key = this.#createInventoryKey(name, usePromotion);
+  #decreaseSpecificStock(name, quantity, isPromotion) {
+    const key = this.#createInventoryKey(name, isPromotion);
+    const currentStock = this.#inventory.get(key) || 0;
+    this.#inventory.set(key, Math.max(0, currentStock - quantity));
+  }
 
-      const currentStock = this.#inventory.get(key);
-      if (currentStock < quantity) {
-        throw new Error("[ERROR] 재고 수량을 초과하여 구매할 수 없습니다.");
-      }
-
-      this.#inventory.set(key, currentStock - quantity);
-    });
+  #createInventoryKey(name, promotion) {
+    return `${name}${promotion ? "_promo" : "_normal"}`;
   }
 
   getStock(name) {
-    const normalKey = this.#createInventoryKey(name, false);
-    const promotionKey = this.#createInventoryKey(name, true);
-
     return (
-      (this.#inventory.get(normalKey) || 0) +
-      (this.#inventory.get(promotionKey) || 0)
+      (this.getPromotionStock(name) || 0) + (this.getNormalStock(name) || 0)
     );
-  }
-
-  getNormalStock(name) {
-    const key = this.#createInventoryKey(name, false);
-    return this.#inventory.get(key) || 0;
   }
 
   getPromotionStock(name) {
-    const key = this.#createInventoryKey(name, true);
-    return this.#inventory.get(key) || 0;
+    return this.#inventory.get(this.#createInventoryKey(name, true)) || 0;
   }
 
-  hasPromotionStock(name) {
-    const products = this.#productRepository.loadProducts();
-    return products.some(
-      (product) =>
-        product.name === name &&
-        product.promotion &&
-        this.getPromotionStock(name) > 0,
-    );
-  }
-
-  getStockInfo(name) {
-    const totalStock = this.getStock(name);
-    return totalStock === 0 ? "재고 없음" : `${totalStock}개`;
+  getNormalStock(name) {
+    return this.#inventory.get(this.#createInventoryKey(name, false)) || 0;
   }
 
   updateStock() {
