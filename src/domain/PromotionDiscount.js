@@ -9,52 +9,60 @@ class PromotionDiscount {
     this.#productRepository = productRepository;
     this.#promotionRepository = promotionRepository;
   }
-
   calculateNPlusK(quantity, stockQuantity, buyCount, getCount, promotionName) {
-    // 재고가 충분해야만 프로모션이 가능하도록 조건 추가
+    // MD추천상품/반짝할인 (1+1) 처리
     if (
-      this.#isOneToOnePromotion(promotionName, quantity) &&
-      stockQuantity >= quantity + NUMBERS.One // 재고가 충분한 경우에만 프로모션 적용
+      promotionName === PROMOTION.MdRecommendation ||
+      promotionName === PROMOTION.FlashSale
     ) {
-      return this.#getOneToOneResult(stockQuantity);
+      return this.#handleOneToOnePromotion(quantity, stockQuantity);
     }
 
+    // 일반 N+1 프로모션 (2+1 등) 처리
+    return this.#handleNormalPromotion(
+      quantity,
+      stockQuantity,
+      buyCount,
+      getCount,
+    );
+  }
+
+  #handleOneToOnePromotion(quantity, stockQuantity) {
+    if (quantity === NUMBERS.One && stockQuantity >= NUMBERS.Two) {
+      return {
+        shouldSuggestMore: true,
+        suggestQuantity: NUMBERS.One,
+        promoQuantity: NUMBERS.One,
+        normalQuantity: NUMBERS.Zero,
+        freeQuantity: NUMBERS.One,
+        totalQuantity: NUMBERS.Two,
+      };
+    }
+    return this.#getNormalPromotionResult(
+      quantity,
+      stockQuantity,
+      NUMBERS.One,
+      NUMBERS.One,
+    );
+  }
+
+  #handleNormalPromotion(quantity, stockQuantity, buyCount, getCount) {
+    if (quantity === buyCount && stockQuantity >= quantity + getCount) {
+      return {
+        shouldSuggestMore: true,
+        suggestQuantity: getCount,
+        promoQuantity: buyCount,
+        normalQuantity: NUMBERS.Zero,
+        freeQuantity: getCount,
+        totalQuantity: buyCount + getCount,
+      };
+    }
     return this.#getNormalPromotionResult(
       quantity,
       stockQuantity,
       buyCount,
-      getCount
+      getCount,
     );
-  }
-
-  #isOneToOnePromotion(promotionName, quantity) {
-    return (
-      (promotionName === PROMOTION.MdRecommendation ||
-        promotionName === PROMOTION.FlashSale) &&
-      quantity === NUMBERS.One
-    );
-  }
-
-  #getOneToOneResult(stockQuantity) {
-    // 재고가 1개 이상 있어야 프로모션을 진행할 수 있음
-    if (stockQuantity <= NUMBERS.One) {
-      return {
-        shouldSuggestMore: false,
-        promoQuantity: NUMBERS.Zero,
-        normalQuantity: NUMBERS.One,
-        freeQuantity: NUMBERS.Zero,
-        totalQuantity: NUMBERS.One,
-      };
-    }
-
-    return {
-      shouldSuggestMore: true,
-      suggestQuantity: NUMBERS.One,
-      promoQuantity: NUMBERS.One,
-      normalQuantity: NUMBERS.Zero,
-      freeQuantity: NUMBERS.One,
-      totalQuantity: NUMBERS.One + NUMBERS.One,
-    };
   }
 
   #getNormalPromotionResult(quantity, stockQuantity, buyCount, getCount) {
@@ -107,7 +115,7 @@ class PromotionDiscount {
     }
 
     const promotion = this.#promotionRepository.findPromotion(
-      product.promotion
+      product.promotion,
     );
     if (!this.#isValidPromotionRule(promotion)) {
       return;
