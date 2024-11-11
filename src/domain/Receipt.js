@@ -1,4 +1,4 @@
-import { NUMBERS } from '../constants/index.js';
+import { NUMBERS } from "../constants/index.js";
 
 class Receipt {
   #productRepository;
@@ -8,7 +8,7 @@ class Receipt {
   }
 
   calculatePurchase(items) {
-    const purchaseItems = items.map(item => {
+    const purchaseItems = items.map((item) => {
       const product = this.#productRepository.findProduct(item.name);
       const amount = product.price * item.quantity;
 
@@ -16,19 +16,19 @@ class Receipt {
         name: item.name,
         quantity: item.quantity,
         amount,
-        formattedAmount: this.#formatAmount(amount)
+        formattedAmount: this.#formatAmount(amount),
       };
     });
 
     const totalAmount = purchaseItems.reduce(
-      (sum, item) => sum + item.amount, 
-      NUMBERS.Zero
+      (sum, item) => sum + item.amount,
+      NUMBERS.Zero,
     );
 
     return {
       items: purchaseItems,
       totalAmount,
-      formattedTotalAmount: this.#formatAmount(totalAmount)
+      formattedTotalAmount: this.#formatAmount(totalAmount),
     };
   }
 
@@ -46,7 +46,7 @@ class Receipt {
       membershipDiscount,
       formattedMembershipDiscount: this.#formatAmount(membershipDiscount),
       finalAmount,
-      formattedFinalAmount: this.#formatAmount(finalAmount)
+      formattedFinalAmount: this.#formatAmount(finalAmount),
     };
   }
 

@@ -1,12 +1,13 @@
-import { NUMBERS } from '../constants/index.js';
+import { NUMBERS } from "../constants/index.js";
 
 class MembershipDiscount {
   calculateDiscountAmount(amount) {
     if (!amount) return NUMBERS.Zero;
-    
+
     const rawDiscount = amount * NUMBERS.MembershipDiscountRate;
-    const discountInThousands = Math.floor(rawDiscount / NUMBERS.ThousandUnit) * NUMBERS.ThousandUnit;
-    
+    const discountInThousands =
+      Math.floor(rawDiscount / NUMBERS.ThousandUnit) * NUMBERS.ThousandUnit;
+
     return Math.min(discountInThousands, NUMBERS.MaxMembershipDiscount);
   }
 }

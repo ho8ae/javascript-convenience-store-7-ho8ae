@@ -1,4 +1,8 @@
-import { ERROR_MESSAGES, NUMBERS,STRING_PATTERNS } from '../constants/index.js';
+import {
+  ERROR_MESSAGES,
+  NUMBERS,
+  STRING_PATTERNS,
+} from "../constants/index.js";
 
 class Product {
   #name;

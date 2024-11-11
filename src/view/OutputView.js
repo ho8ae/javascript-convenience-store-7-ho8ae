@@ -1,11 +1,11 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
-import { 
-  VIEW_MESSAGES, 
-  RECEIPT_TEMPLATE, 
-  DISPLAY, 
-  STRING_PATTERNS, 
-  NUMBERS 
-} from '../constants/index.js';
+import {
+  VIEW_MESSAGES,
+  RECEIPT_TEMPLATE,
+  DISPLAY,
+  STRING_PATTERNS,
+  NUMBERS,
+} from "../constants/index.js";
 
 const getStockText = (quantity) => {
   if (quantity === NUMBERS.Zero) {
@@ -46,11 +46,11 @@ const OutputView = {
       const promotionText = getPromotionText(product.promotion);
 
       this.print(
-        `- ${product.name} ${product.price.toLocaleString()}${STRING_PATTERNS.Won} ${stockText}${promotionText}`
+        `- ${product.name} ${product.price.toLocaleString()}${STRING_PATTERNS.Won} ${stockText}${promotionText}`,
       );
     });
-    
-    this.printNewLine();  
+
+    this.printNewLine();
   },
 
   printReceipt(receipt) {
@@ -71,24 +71,24 @@ const OutputView = {
 
     const totalQuantity = receipt.items.reduce(
       (sum, item) => sum + item.quantity,
-      NUMBERS.Zero
+      NUMBERS.Zero,
     );
 
     this.print(RECEIPT_TEMPLATE.Footer);
     this.print(
-      `${RECEIPT_TEMPLATE.TotalAmount}\t\t${totalQuantity}\t${getFormattedAmount(receipt.formattedTotalAmount)}`
+      `${RECEIPT_TEMPLATE.TotalAmount}\t\t${totalQuantity}\t${getFormattedAmount(receipt.formattedTotalAmount)}`,
     );
     this.print(
-      `${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${getFormattedAmount(receipt.formattedPromotionDiscount)}`
+      `${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${getFormattedAmount(receipt.formattedPromotionDiscount)}`,
     );
     this.print(
-      `${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${getFormattedAmount(receipt.formattedMembershipDiscount)}`
+      `${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${getFormattedAmount(receipt.formattedMembershipDiscount)}`,
     );
     this.print(
-      `${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${getFormattedAmount(receipt.formattedFinalAmount)}`
+      `${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${getFormattedAmount(receipt.formattedFinalAmount)}`,
     );
     this.printNewLine();
-  }
+  },
 };
 
 export default OutputView;

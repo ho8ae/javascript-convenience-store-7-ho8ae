@@ -1,4 +1,9 @@
-import { ERROR_MESSAGES, STRING_PATTERNS, NUMBERS, INPUTS } from '../constants/index.js';
+import {
+  ERROR_MESSAGES,
+  STRING_PATTERNS,
+  NUMBERS,
+  INPUTS,
+} from "../constants/index.js";
 
 class InputValidator {
   static isValidPurchaseFormat(input) {
@@ -25,9 +30,11 @@ class InputValidator {
   static #parseItem(item) {
     const trimmedItem = item.trim();
     InputValidator.#validateHyphenCount(trimmedItem);
-    
+
     const matches = InputValidator.#extractMatches(trimmedItem);
-    const quantity = InputValidator.#parseQuantity(matches[NUMBERS.SecondMatch]);
+    const quantity = InputValidator.#parseQuantity(
+      matches[NUMBERS.SecondMatch],
+    );
 
     return {
       name: matches[NUMBERS.FirstMatch].trim(),

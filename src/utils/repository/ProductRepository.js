@@ -1,6 +1,10 @@
 import { readFileSync } from "fs";
 import Product from "../../domain/Product.js";
-import { ERROR_MESSAGES, STRING_PATTERNS, NUMBERS } from "../../constants/index.js";
+import {
+  ERROR_MESSAGES,
+  STRING_PATTERNS,
+  NUMBERS,
+} from "../../constants/index.js";
 
 class ProductRepository {
   #filePath = "public/products.md";
@@ -35,7 +39,7 @@ class ProductRepository {
           name,
           Number(price),
           parsedQuantity,
-          parsedPromotion
+          parsedPromotion,
         );
       });
 

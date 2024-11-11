@@ -15,13 +15,20 @@ class PromotionDiscount {
       return this.#getOneToOneResult();
     }
 
-    return this.#getNormalPromotionResult(quantity, stockQuantity, buyCount, getCount);
+    return this.#getNormalPromotionResult(
+      quantity,
+      stockQuantity,
+      buyCount,
+      getCount,
+    );
   }
 
   #isOneToOnePromotion(promotionName, quantity) {
-    return (promotionName === PROMOTION.MdRecommendation ||
-      promotionName === PROMOTION.FlashSale) &&
-      quantity === NUMBERS.One;
+    return (
+      (promotionName === PROMOTION.MdRecommendation ||
+        promotionName === PROMOTION.FlashSale) &&
+      quantity === NUMBERS.One
+    );
   }
 
   #getOneToOneResult() {
@@ -51,7 +58,8 @@ class PromotionDiscount {
       normalQuantity: remainingQuantity,
       freeQuantity,
       totalQuantity: quantity,
-      needsConfirmation: remainingQuantity === NUMBERS.TwoPlusOneRequiredItems * 2,
+      needsConfirmation:
+        remainingQuantity === NUMBERS.TwoPlusOneRequiredItems * 2,
       nonPromoQuantity: NUMBERS.TwoPlusOneRequiredItems * 2,
     };
   }
@@ -67,7 +75,7 @@ class PromotionDiscount {
   calculatePromotion(items) {
     const result = {
       discount: NUMBERS.Zero,
-      freeItems: []
+      freeItems: [],
     };
 
     items.forEach((item) => {
@@ -83,7 +91,9 @@ class PromotionDiscount {
       return;
     }
 
-    const promotion = this.#promotionRepository.findPromotion(product.promotion);
+    const promotion = this.#promotionRepository.findPromotion(
+      product.promotion,
+    );
     if (!this.#isValidPromotionRule(promotion)) {
       return;
     }
@@ -111,22 +121,24 @@ class PromotionDiscount {
   }
 
   #isSpecialPromotion(promotion, item) {
-    return (promotion.name === PROMOTION.MdRecommendation ||
-      promotion.name === PROMOTION.FlashSale) &&
-      item.quantity >= NUMBERS.One + NUMBERS.One;
+    return (
+      (promotion.name === PROMOTION.MdRecommendation ||
+        promotion.name === PROMOTION.FlashSale) &&
+      item.quantity >= NUMBERS.One + NUMBERS.One
+    );
   }
 
   #applySpecialPromotion(item, product, result) {
     const freeCount = Math.floor(item.quantity / (NUMBERS.One + NUMBERS.One));
     const discountAmount = product.price * freeCount;
-    
+
     result.discount += discountAmount;
     result.freeItems.push({ name: item.name, quantity: freeCount });
   }
 
   #applyNormalPromotion(item, product, result) {
     const freeItemAmount = product.price * item.freeQuantity;
-    
+
     result.discount += freeItemAmount;
     result.freeItems.push({ name: item.name, quantity: item.freeQuantity });
   }

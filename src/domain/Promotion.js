@@ -1,8 +1,8 @@
-import { 
-  ERROR_MESSAGES, 
-  STRING_PATTERNS, 
-  NUMBERS 
-} from '../constants/index.js';
+import {
+  ERROR_MESSAGES,
+  STRING_PATTERNS,
+  NUMBERS,
+} from "../constants/index.js";
 
 class Promotion {
   #name;
@@ -20,7 +20,6 @@ class Promotion {
     this.#endDate = endDate;
   }
 
-  
   get name() {
     return this.#name;
   }
@@ -51,8 +50,10 @@ class Promotion {
     if (isNaN(get) || get <= NUMBERS.Zero) {
       throw new Error(ERROR_MESSAGES.InvalidGetCount);
     }
-    if (!STRING_PATTERNS.DateFormatRegex.test(startDate) || 
-        !STRING_PATTERNS.DateFormatRegex.test(endDate)) {
+    if (
+      !STRING_PATTERNS.DateFormatRegex.test(startDate) ||
+      !STRING_PATTERNS.DateFormatRegex.test(endDate)
+    ) {
       throw new Error(ERROR_MESSAGES.InvalidDateFormat);
     }
   }

@@ -7,12 +7,12 @@ import MembershipDiscount from "../domain/MembershipDiscount.js";
 import Receipt from "../domain/Receipt.js";
 import InputValidator from "../utils/InputValidator.js";
 import ProductInventory from "../domain/ProductInventory.js";
-import { 
-  PROMOTION, 
-  INPUTS, 
+import {
+  PROMOTION,
+  INPUTS,
   NUMBERS,
-  STRING_PATTERNS 
-} from '../constants/index.js';
+  STRING_PATTERNS,
+} from "../constants/index.js";
 
 class ConvenienceController {
   #productRepository;
@@ -52,11 +52,14 @@ class ConvenienceController {
     try {
       const items = await this.#processInitialPurchase();
       await this.#processPromotions(items);
-      
+
       const membershipApplied = await this.#retryUntilValidMembership();
-      const receiptData = await this.#calculatePurchaseData(items, membershipApplied);
+      const receiptData = await this.#calculatePurchaseData(
+        items,
+        membershipApplied,
+      );
       await this.#handleStockAndReceipt(items, receiptData);
-      
+
       return await this.#handleAdditionalPurchase();
     } catch (error) {
       return this.#handlePurchaseError(error);
@@ -69,12 +72,12 @@ class ConvenienceController {
     const amountAfterPromotion = totalAmount - promotionResult.discount;
     const membershipDiscount = await this.#calculateMembershipDiscount(
       amountAfterPromotion,
-      membershipApplied
+      membershipApplied,
     );
 
     return {
       promotionResult,
-      membershipDiscount
+      membershipDiscount,
     };
   }
 
@@ -91,12 +94,16 @@ class ConvenienceController {
   }
 
   async #processPromotionForItem(item) {
-    const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
+    const promoProduct = this.#productRepository.findProductWithPromotion(
+      item.name,
+    );
     if (!this.#isValidPromoProduct(promoProduct)) {
       return;
     }
 
-    const promotion = this.#promotionRepository.findPromotion(promoProduct.promotion);
+    const promotion = this.#promotionRepository.findPromotion(
+      promoProduct.promotion,
+    );
     if (!this.#isValidPromotion(promotion)) {
       return;
     }
@@ -120,24 +127,30 @@ class ConvenienceController {
   }
 
   #isOneItemPromotion(promoProduct, item) {
-    return (promoProduct.promotion === PROMOTION.MdRecommendation || 
-            promoProduct.promotion === PROMOTION.FlashSale) && 
-           item.quantity === NUMBERS.One;
+    return (
+      (promoProduct.promotion === PROMOTION.MdRecommendation ||
+        promoProduct.promotion === PROMOTION.FlashSale) &&
+      item.quantity === NUMBERS.One
+    );
   }
 
   async #handleOneItemPromotion(item, promoProduct, promotion) {
     while (true) {
       try {
         const answer = await InputView.readPromotionAddQuestion(item.name);
-        InputValidator.validateMembershipInput(answer);  
-  
-        return this.#processPromotionAnswer(answer, item, promoProduct, promotion);
+        InputValidator.validateMembershipInput(answer);
+
+        return this.#processPromotionAnswer(
+          answer,
+          item,
+          promoProduct,
+          promotion,
+        );
       } catch (error) {
         OutputView.print(error.message);
       }
     }
   }
-  
 
   #processPromotionAnswer(answer, item, promoProduct, promotion) {
     if (answer.toUpperCase() === INPUTS.Yes) {
@@ -153,7 +166,7 @@ class ConvenienceController {
       promoProduct.quantity,
       promotion.buy,
       promotion.get,
-      promoProduct.promotion
+      promoProduct.promotion,
     );
     Object.assign(item, result);
     return item;
@@ -173,11 +186,16 @@ class ConvenienceController {
       promoProduct.quantity,
       promotion.buy,
       promotion.get,
-      promoProduct.promotion
+      promoProduct.promotion,
     );
 
     if (result.needsConfirmation) {
-      return await this.#handlePromotionConfirmation(item, promoProduct, promotion, result);
+      return await this.#handlePromotionConfirmation(
+        item,
+        promoProduct,
+        promotion,
+        result,
+      );
     }
     Object.assign(item, result);
     return item;
@@ -188,12 +206,17 @@ class ConvenienceController {
       try {
         const answer = await InputView.readPromotionWarning(
           item.name,
-          result.nonPromoQuantity
+          result.nonPromoQuantity,
         );
-        InputValidator.validateMembershipInput(answer);  // OutputView.print(STRING_PATTERNS.Empty) 제거
-  
+        InputValidator.validateMembershipInput(answer); // OutputView.print(STRING_PATTERNS.Empty) 제거
+
         if (answer.toUpperCase() !== INPUTS.Yes) {
-          return this.#adjustPromotionQuantity(item, promoProduct, promotion, result);
+          return this.#adjustPromotionQuantity(
+            item,
+            promoProduct,
+            promotion,
+            result,
+          );
         }
         Object.assign(item, result);
         return item;
@@ -210,7 +233,7 @@ class ConvenienceController {
       promoProduct.quantity,
       promotion.buy,
       promotion.get,
-      promoProduct.promotion
+      promoProduct.promotion,
     );
     Object.assign(item, newResult);
     return item;
@@ -231,7 +254,7 @@ class ConvenienceController {
       items,
       promotionResult.freeItems,
       promotionResult.discount,
-      membershipDiscount
+      membershipDiscount,
     );
 
     this.#productInventory.decreaseStock(items);
@@ -249,7 +272,7 @@ class ConvenienceController {
   async #getMembershipInput() {
     const input = await InputView.readMembershipInput();
     InputValidator.validateMembershipInput(input);
-    OutputView.printNewLine(); 
+    OutputView.printNewLine();
     return input.toUpperCase() === INPUTS.Yes;
   }
 
@@ -257,7 +280,9 @@ class ConvenienceController {
     if (!membershipApplied) {
       return NUMBERS.Zero;
     }
-    return this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion);
+    return this.#membershipDiscount.calculateDiscountAmount(
+      amountAfterPromotion,
+    );
   }
 
   async #handleAdditionalPurchase() {

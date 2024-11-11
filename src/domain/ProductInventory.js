@@ -1,4 +1,4 @@
-import { ERROR_MESSAGES, NUMBERS } from '../constants/index.js';
+import { ERROR_MESSAGES, NUMBERS } from "../constants/index.js";
 
 class ProductInventory {
   #productRepository;
@@ -51,14 +51,15 @@ class ProductInventory {
     let normalStock = this.#inventory.get(normalKey) || NUMBERS.Zero;
     let remainingQuantity = item.quantity;
 
-    const { updatedPromoStock, updatedRemainingQuantity } = this.#decreasePromoStock(
-      item,
-      promoStock,
-      remainingQuantity
-    );
+    const { updatedPromoStock, updatedRemainingQuantity } =
+      this.#decreasePromoStock(item, promoStock, remainingQuantity);
 
     if (updatedRemainingQuantity > NUMBERS.Zero) {
-      normalStock = this.#decreaseNormalStock(item, normalStock, updatedRemainingQuantity);
+      normalStock = this.#decreaseNormalStock(
+        item,
+        normalStock,
+        updatedRemainingQuantity,
+      );
     }
 
     this.#updateInventory(promoKey, normalKey, updatedPromoStock, normalStock);
@@ -66,7 +67,10 @@ class ProductInventory {
 
   #decreasePromoStock(item, promoStock, remainingQuantity) {
     if (promoStock <= NUMBERS.Zero) {
-      return { updatedPromoStock: promoStock, updatedRemainingQuantity: remainingQuantity };
+      return {
+        updatedPromoStock: promoStock,
+        updatedRemainingQuantity: remainingQuantity,
+      };
     }
 
     const quantityFromPromo = Math.min(remainingQuantity, promoStock);
@@ -104,11 +108,15 @@ class ProductInventory {
   }
 
   getPromotionStock(name) {
-    return this.#inventory.get(this.#createInventoryKey(name, true)) || NUMBERS.Zero;
+    return (
+      this.#inventory.get(this.#createInventoryKey(name, true)) || NUMBERS.Zero
+    );
   }
 
   getNormalStock(name) {
-    return this.#inventory.get(this.#createInventoryKey(name, false)) || NUMBERS.Zero;
+    return (
+      this.#inventory.get(this.#createInventoryKey(name, false)) || NUMBERS.Zero
+    );
   }
 }
 
