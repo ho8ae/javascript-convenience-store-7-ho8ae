@@ -7,12 +7,12 @@ import {
   NUMBERS 
 } from '../constants/index.js';
 
-class OutputView {
-  static print(message) {
+const OutputView = {
+  print(message) {
     MissionUtils.Console.print(message);
-  }
+  },
 
-  static printProducts(products) {
+  printProducts(products) {
     this.print(VIEW_MESSAGES.Welcome);
     this.print(VIEW_MESSAGES.CurrentProducts);
 
@@ -29,9 +29,9 @@ class OutputView {
       );
     });
     this.print(STRING_PATTERNS.Empty);
-  }
+  },
 
-  static printReceipt(receipt) {
+  printReceipt(receipt) {
     this.print(STRING_PATTERNS.NewLine + RECEIPT_TEMPLATE.Header);
     this.print(RECEIPT_TEMPLATE.ProductHeader);
 
@@ -58,6 +58,6 @@ class OutputView {
     this.print(`${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${receipt.formattedMembershipDiscount || String(NUMBERS.Zero)}`);
     this.print(`${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${receipt.formattedFinalAmount || String(NUMBERS.Zero)}`);
   }
-}
+};
 
 export default OutputView;
