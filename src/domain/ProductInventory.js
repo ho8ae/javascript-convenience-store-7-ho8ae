@@ -65,7 +65,15 @@ class ProductInventory {
   }
 
   #createInventoryKey(name, promotion) {
-    return `${name}${promotion ? "_promo" : "_normal"}`;
+    const suffix = this.#getInventorySuffix(promotion);
+    return `${name}${suffix}`;
+  }
+
+  #getInventorySuffix(promotion) {
+    if (promotion) {
+      return "_promo";
+    }
+    return "_normal";
   }
 
   getTotalStock(name) {

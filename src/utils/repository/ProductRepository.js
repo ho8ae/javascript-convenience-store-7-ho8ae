@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import Product from "../../domain/Product.js";
-import { ERROR_MESSAGES, STRING_PATTERNS } from "../../constants/index.js";
+import { ERROR_MESSAGES, STRING_PATTERNS, NUMBERS } from "../../constants/index.js";
 
 class ProductRepository {
   #filePath = "public/products.md";
@@ -25,13 +25,17 @@ class ProductRepository {
 
       this.#products = lines.map((line) => {
         const [name, price, quantity, promotion] = line
-          .split(",")
+          .split(STRING_PATTERNS.Comma)
           .map((item) => item.trim());
+
+        const parsedQuantity = this.#parseQuantity(quantity);
+        const parsedPromotion = this.#parsePromotion(promotion);
+
         return new Product(
           name,
           Number(price),
-          quantity === "없음" ? 0 : Number(quantity),
-          promotion === "null" ? null : promotion,
+          parsedQuantity,
+          parsedPromotion
         );
       });
 
@@ -40,6 +44,20 @@ class ProductRepository {
       if (error.message.startsWith(STRING_PATTERNS.ErrorPrefix)) throw error;
       throw new Error(ERROR_MESSAGES.LoadProductFail);
     }
+  }
+
+  #parseQuantity(quantity) {
+    if (quantity === "없음") {
+      return NUMBERS.Zero;
+    }
+    return Number(quantity);
+  }
+
+  #parsePromotion(promotion) {
+    if (promotion === "null") {
+      return null;
+    }
+    return promotion;
   }
 
   findProductWithPromotion(name) {
@@ -71,7 +89,7 @@ class ProductRepository {
         return new Product(
           product.name,
           product.price,
-          Math.max(0, product.quantity - quantity),
+          Math.max(NUMBERS.Zero, product.quantity - quantity),
           product.promotion,
         );
       }
@@ -82,7 +100,7 @@ class ProductRepository {
   getTotalStock(name) {
     return this.#products
       .filter((p) => p.name === name)
-      .reduce((sum, p) => sum + p.quantity, 0);
+      .reduce((sum, p) => sum + p.quantity, NUMBERS.Zero);
   }
 
   hasProduct(name) {

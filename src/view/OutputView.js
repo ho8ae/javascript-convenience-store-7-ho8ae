@@ -40,7 +40,6 @@ const OutputView = {
   printProducts(products) {
     this.print(VIEW_MESSAGES.Welcome);
     this.print(VIEW_MESSAGES.CurrentProducts);
-    
 
     products.forEach((product) => {
       const stockText = getStockText(product.quantity);
@@ -50,7 +49,8 @@ const OutputView = {
         `- ${product.name} ${product.price.toLocaleString()}${STRING_PATTERNS.Won} ${stockText}${promotionText}`
       );
     });
-    this.printNewLine();
+    
+    this.printNewLine();  
   },
 
   printReceipt(receipt) {
