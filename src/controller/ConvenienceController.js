@@ -52,8 +52,20 @@ class ConvenienceController {
     try {
       const items = await this.#processInitialPurchase();
       await this.#processPromotions(items);
-      const receiptData = await this.#calculatePurchaseAmount(items);
-      await this.#handleStockAndReceipt(items, receiptData);
+      
+      const membershipApplied = await this.#retryUntilValidMembership();
+      
+      const promotionResult = this.#promotionDiscount.calculatePromotion(items);
+      const { totalAmount } = this.#receipt.calculatePurchase(items);
+      const amountAfterPromotion = totalAmount - promotionResult.discount;
+      const membershipDiscount = membershipApplied 
+        ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
+        : NUMBERS.Zero;
+
+      await this.#handleStockAndReceipt(items, {
+        promotionResult,
+        membershipDiscount,
+      });
       
       return await this.#handleAdditionalPurchase();
     } catch (error) {
@@ -173,30 +185,14 @@ class ConvenienceController {
     return item;
   }
 
-  async #calculatePurchaseAmount(items) {
-    const membershipApplied = await this.#getMembershipInput();
-    OutputView.print(STRING_PATTERNS.Empty);
-    
-    const promotionResult = this.#promotionDiscount.calculatePromotion(items);
-    const { totalAmount } = this.#receipt.calculatePurchase(items);
-    const amountAfterPromotion = totalAmount - promotionResult.discount;
-    
-    const membershipDiscount = await this.#calculateMembershipDiscount(
-      amountAfterPromotion, 
-      membershipApplied
-    );
-
-    return {
-      promotionResult,
-      membershipDiscount
-    };
-  }
-
-  async #calculateMembershipDiscount(amountAfterPromotion, membershipApplied) {
-    if (!membershipApplied) {
-      return NUMBERS.Zero;
+  async #retryUntilValidMembership() {
+    while (true) {
+      try {
+        return await this.#getMembershipInput();
+      } catch (error) {
+        OutputView.print(error.message);
+      }
     }
-    return this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion);
   }
 
   async #handleStockAndReceipt(items, { promotionResult, membershipDiscount }) {
