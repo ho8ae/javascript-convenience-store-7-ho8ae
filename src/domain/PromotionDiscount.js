@@ -1,8 +1,5 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
-import { 
-  PROMOTION, 
-  NUMBERS,  
-} from '../constants/index.js';
+import { PROMOTION } from "../constants/index.js";
 
 class PromotionDiscount {
   #productRepository;
@@ -14,21 +11,23 @@ class PromotionDiscount {
   }
 
   calculateNPlusK(quantity, stockQuantity, buyCount, getCount, promotionName) {
+    // MD추천상품과 반짝할인은 1+1 처리
     if (
-      (promotionName === PROMOTION.MdRecommendation || 
-       promotionName === PROMOTION.FlashSale) &&
-      quantity === NUMBERS.One
+      (promotionName === PROMOTION.MdRecommendation ||
+        promotionName === PROMOTION.FlashSale) &&
+      quantity === 1
     ) {
       return {
         shouldSuggestMore: true,
-        suggestQuantity: NUMBERS.One,
-        promoQuantity: NUMBERS.One,
-        normalQuantity: NUMBERS.Zero,
-        freeQuantity: NUMBERS.One,
-        totalQuantity: NUMBERS.One + NUMBERS.One,
+        suggestQuantity: 1,
+        promoQuantity: 1,
+        normalQuantity: 0,
+        freeQuantity: 1,
+        totalQuantity: 2,
       };
     }
 
+    // 일반 N+K 프로모션 (2+1 등)
     const setSize = buyCount + getCount;
     const possibleSets = Math.floor(quantity / buyCount);
     const maxSets = Math.floor(stockQuantity / setSize);
@@ -44,32 +43,46 @@ class PromotionDiscount {
       normalQuantity: remainingQuantity,
       freeQuantity,
       totalQuantity: quantity,
-      needsConfirmation: remainingQuantity === NUMBERS.TwoPlusOneRequiredItems * 2,
-      nonPromoQuantity: NUMBERS.TwoPlusOneRequiredItems * 2,
+      needsConfirmation: remainingQuantity === 4,
+      nonPromoQuantity: 4,
     };
   }
 
+  isValidPromotion(promotion) {
+    const currentDate = MissionUtils.DateTimes.now();
+    const startDate = new Date(promotion.startDate);
+    const endDate = new Date(promotion.endDate);
+
+    return currentDate >= startDate && currentDate <= endDate;
+  }
+
   calculatePromotion(items) {
-    let totalDiscount = NUMBERS.Zero;
+    let totalDiscount = 0;
     const freeItems = [];
 
     items.forEach((item) => {
-      const product = this.#productRepository.findProductWithPromotion(item.name);
+      const product = this.#productRepository.findProductWithPromotion(
+        item.name,
+      );
       if (!product) return;
 
-      const promotion = this.#promotionRepository.findPromotion(product.promotion);
+      const promotion = this.#promotionRepository.findPromotion(
+        product.promotion,
+      );
       if (!promotion || !this.isValidPromotion(promotion)) return;
 
+      // MD추천상품과 반짝할인은 1+1로 동일하게 처리
       if (
-        (promotion.name === PROMOTION.MdRecommendation || 
-         promotion.name === PROMOTION.FlashSale) &&
-        item.quantity >= NUMBERS.One + NUMBERS.One
+        (promotion.name === PROMOTION.MdRecommendation ||
+          promotion.name === PROMOTION.FlashSale) &&
+        item.quantity >= 2
       ) {
-        const freeCount = Math.floor(item.quantity / NUMBERS.One + NUMBERS.One);
+        const freeCount = Math.floor(item.quantity / 2); // 2개당 1개 무료
         const discountAmount = product.price * freeCount;
         totalDiscount += discountAmount;
         freeItems.push({ name: item.name, quantity: freeCount });
-      } else if (item.freeQuantity > NUMBERS.Zero) {
+      } else if (item.freeQuantity > 0) {
+        // 2+1 등 일반 프로모션
         const freeItemAmount = product.price * item.freeQuantity;
         totalDiscount += freeItemAmount;
         freeItems.push({ name: item.name, quantity: item.freeQuantity });
@@ -80,14 +93,6 @@ class PromotionDiscount {
       discount: totalDiscount,
       freeItems,
     };
-  }
-
-  isValidPromotion(promotion) {
-    const currentDate = MissionUtils.DateTimes.now();
-    const startDate = new Date(promotion.startDate);
-    const endDate = new Date(promotion.endDate);
-
-    return currentDate >= startDate && currentDate <= endDate;
   }
 }
 
