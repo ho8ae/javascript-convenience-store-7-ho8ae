@@ -30,9 +30,8 @@ const OutputView = {
     });
     this.print(STRING_PATTERNS.Empty);
   },
-
   printReceipt(receipt) {
-    this.print(STRING_PATTERNS.NewLine + RECEIPT_TEMPLATE.Header);
+    this.print(RECEIPT_TEMPLATE.Header);
     this.print(RECEIPT_TEMPLATE.ProductHeader);
 
     receipt.items.forEach((item) => {
@@ -57,6 +56,7 @@ const OutputView = {
     this.print(`${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${receipt.formattedPromotionDiscount || String(NUMBERS.Zero)}`);
     this.print(`${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${receipt.formattedMembershipDiscount || String(NUMBERS.Zero)}`);
     this.print(`${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${receipt.formattedFinalAmount || String(NUMBERS.Zero)}`);
+    this.print(STRING_PATTERNS.Empty);  // 영수증 마지막에 빈 줄 추가
   }
 };
 
