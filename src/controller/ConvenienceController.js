@@ -258,6 +258,7 @@ class ConvenienceController {
           result.nonPromoQuantity,
         );
         InputValidator.validateMembershipInput(answer);
+        OutputView.printNewLine(); 
 
         if (answer.toUpperCase() === INPUTS.Yes) {
           Object.assign(item, result);
