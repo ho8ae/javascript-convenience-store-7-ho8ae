@@ -31,49 +31,72 @@ class ProductInventory {
 
   decreaseStock(items) {
     items.forEach((item) => {
-      const totalStock = this.getTotalStock(item.name);
-      if (item.quantity > totalStock) {
-        throw new Error(ERROR_MESSAGES.ExceededStock);
-      }
-
-      const promoKey = this.#createInventoryKey(item.name, true);
-      const normalKey = this.#createInventoryKey(item.name, false);
-
-      let promoStock = this.#inventory.get(promoKey) || NUMBERS.Zero;
-      let normalStock = this.#inventory.get(normalKey) || NUMBERS.Zero;
-      let remainingQuantity = item.quantity;
-
-      if (promoStock > NUMBERS.Zero) {
-        const quantityFromPromo = Math.min(remainingQuantity, promoStock);
-        promoStock -= quantityFromPromo;
-        remainingQuantity -= quantityFromPromo;
-        this.#productRepository.updateStock(item.name, quantityFromPromo, true);
-      }
-
-      if (remainingQuantity > NUMBERS.Zero) {
-        if (normalStock >= remainingQuantity) {
-          normalStock -= remainingQuantity;
-          this.#productRepository.updateStock(item.name, remainingQuantity, false);
-        } else {
-          throw new Error(ERROR_MESSAGES.ExceededStock);
-        }
-      }
-
-      this.#inventory.set(promoKey, promoStock);
-      this.#inventory.set(normalKey, normalStock);
+      this.#validateStock(item);
+      this.#processStockDecrease(item);
     });
   }
 
-  #createInventoryKey(name, promotion) {
-    const suffix = this.#getInventorySuffix(promotion);
-    return `${name}${suffix}`;
+  #validateStock(item) {
+    const totalStock = this.getTotalStock(item.name);
+    if (item.quantity > totalStock) {
+      throw new Error(ERROR_MESSAGES.ExceededStock);
+    }
   }
 
-  #getInventorySuffix(promotion) {
-    if (promotion) {
-      return "_promo";
+  #processStockDecrease(item) {
+    const promoKey = this.#createInventoryKey(item.name, true);
+    const normalKey = this.#createInventoryKey(item.name, false);
+
+    let promoStock = this.#inventory.get(promoKey) || NUMBERS.Zero;
+    let normalStock = this.#inventory.get(normalKey) || NUMBERS.Zero;
+    let remainingQuantity = item.quantity;
+
+    const { updatedPromoStock, updatedRemainingQuantity } = this.#decreasePromoStock(
+      item,
+      promoStock,
+      remainingQuantity
+    );
+
+    if (updatedRemainingQuantity > NUMBERS.Zero) {
+      normalStock = this.#decreaseNormalStock(item, normalStock, updatedRemainingQuantity);
     }
-    return "_normal";
+
+    this.#updateInventory(promoKey, normalKey, updatedPromoStock, normalStock);
+  }
+
+  #decreasePromoStock(item, promoStock, remainingQuantity) {
+    if (promoStock <= NUMBERS.Zero) {
+      return { updatedPromoStock: promoStock, updatedRemainingQuantity: remainingQuantity };
+    }
+
+    const quantityFromPromo = Math.min(remainingQuantity, promoStock);
+    const updatedPromoStock = promoStock - quantityFromPromo;
+    const updatedRemainingQuantity = remainingQuantity - quantityFromPromo;
+
+    this.#productRepository.updateStock(item.name, quantityFromPromo, true);
+    return { updatedPromoStock, updatedRemainingQuantity };
+  }
+
+  #decreaseNormalStock(item, normalStock, remainingQuantity) {
+    if (normalStock < remainingQuantity) {
+      throw new Error(ERROR_MESSAGES.ExceededStock);
+    }
+
+    const updatedNormalStock = normalStock - remainingQuantity;
+    this.#productRepository.updateStock(item.name, remainingQuantity, false);
+    return updatedNormalStock;
+  }
+
+  #updateInventory(promoKey, normalKey, promoStock, normalStock) {
+    this.#inventory.set(promoKey, promoStock);
+    this.#inventory.set(normalKey, normalStock);
+  }
+
+  #createInventoryKey(name, promotion) {
+    if (promotion) {
+      return `${name}_promo`;
+    }
+    return `${name}_normal`;
   }
 
   getTotalStock(name) {

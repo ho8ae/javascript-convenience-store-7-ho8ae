@@ -1,5 +1,5 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
-import { PROMOTION } from "../constants/index.js";
+import { PROMOTION, NUMBERS } from "../constants/index.js";
 
 class PromotionDiscount {
   #productRepository;
@@ -11,23 +11,31 @@ class PromotionDiscount {
   }
 
   calculateNPlusK(quantity, stockQuantity, buyCount, getCount, promotionName) {
-    // MD추천상품과 반짝할인은 1+1 처리
-    if (
-      (promotionName === PROMOTION.MdRecommendation ||
-        promotionName === PROMOTION.FlashSale) &&
-      quantity === 1
-    ) {
-      return {
-        shouldSuggestMore: true,
-        suggestQuantity: 1,
-        promoQuantity: 1,
-        normalQuantity: 0,
-        freeQuantity: 1,
-        totalQuantity: 2,
-      };
+    if (this.#isOneToOnePromotion(promotionName, quantity)) {
+      return this.#getOneToOneResult();
     }
 
-    // 일반 N+K 프로모션 (2+1 등)
+    return this.#getNormalPromotionResult(quantity, stockQuantity, buyCount, getCount);
+  }
+
+  #isOneToOnePromotion(promotionName, quantity) {
+    return (promotionName === PROMOTION.MdRecommendation ||
+      promotionName === PROMOTION.FlashSale) &&
+      quantity === NUMBERS.One;
+  }
+
+  #getOneToOneResult() {
+    return {
+      shouldSuggestMore: true,
+      suggestQuantity: NUMBERS.One,
+      promoQuantity: NUMBERS.One,
+      normalQuantity: NUMBERS.Zero,
+      freeQuantity: NUMBERS.One,
+      totalQuantity: NUMBERS.One + NUMBERS.One,
+    };
+  }
+
+  #getNormalPromotionResult(quantity, stockQuantity, buyCount, getCount) {
     const setSize = buyCount + getCount;
     const possibleSets = Math.floor(quantity / buyCount);
     const maxSets = Math.floor(stockQuantity / setSize);
@@ -43,8 +51,8 @@ class PromotionDiscount {
       normalQuantity: remainingQuantity,
       freeQuantity,
       totalQuantity: quantity,
-      needsConfirmation: remainingQuantity === 4,
-      nonPromoQuantity: 4,
+      needsConfirmation: remainingQuantity === NUMBERS.TwoPlusOneRequiredItems * 2,
+      nonPromoQuantity: NUMBERS.TwoPlusOneRequiredItems * 2,
     };
   }
 
@@ -57,42 +65,70 @@ class PromotionDiscount {
   }
 
   calculatePromotion(items) {
-    let totalDiscount = 0;
-    const freeItems = [];
+    const result = {
+      discount: NUMBERS.Zero,
+      freeItems: []
+    };
 
     items.forEach((item) => {
-      const product = this.#productRepository.findProductWithPromotion(
-        item.name,
-      );
-      if (!product) return;
-
-      const promotion = this.#promotionRepository.findPromotion(
-        product.promotion,
-      );
-      if (!promotion || !this.isValidPromotion(promotion)) return;
-
-      // MD추천상품과 반짝할인은 1+1로 동일하게 처리
-      if (
-        (promotion.name === PROMOTION.MdRecommendation ||
-          promotion.name === PROMOTION.FlashSale) &&
-        item.quantity >= 2
-      ) {
-        const freeCount = Math.floor(item.quantity / 2); // 2개당 1개 무료
-        const discountAmount = product.price * freeCount;
-        totalDiscount += discountAmount;
-        freeItems.push({ name: item.name, quantity: freeCount });
-      } else if (item.freeQuantity > 0) {
-        // 2+1 등 일반 프로모션
-        const freeItemAmount = product.price * item.freeQuantity;
-        totalDiscount += freeItemAmount;
-        freeItems.push({ name: item.name, quantity: item.freeQuantity });
-      }
+      this.#processItemPromotion(item, result);
     });
 
-    return {
-      discount: totalDiscount,
-      freeItems,
-    };
+    return result;
+  }
+
+  #processItemPromotion(item, result) {
+    const product = this.#productRepository.findProductWithPromotion(item.name);
+    if (!this.#isValidProduct(product)) {
+      return;
+    }
+
+    const promotion = this.#promotionRepository.findPromotion(product.promotion);
+    if (!this.#isValidPromotionRule(promotion)) {
+      return;
+    }
+
+    this.#applyPromotionDiscount(item, product, promotion, result);
+  }
+
+  #isValidProduct(product) {
+    return product !== null && product !== undefined;
+  }
+
+  #isValidPromotionRule(promotion) {
+    return promotion && this.isValidPromotion(promotion);
+  }
+
+  #applyPromotionDiscount(item, product, promotion, result) {
+    if (this.#isSpecialPromotion(promotion, item)) {
+      this.#applySpecialPromotion(item, product, result);
+      return;
+    }
+
+    if (item.freeQuantity > NUMBERS.Zero) {
+      this.#applyNormalPromotion(item, product, result);
+    }
+  }
+
+  #isSpecialPromotion(promotion, item) {
+    return (promotion.name === PROMOTION.MdRecommendation ||
+      promotion.name === PROMOTION.FlashSale) &&
+      item.quantity >= NUMBERS.One + NUMBERS.One;
+  }
+
+  #applySpecialPromotion(item, product, result) {
+    const freeCount = Math.floor(item.quantity / (NUMBERS.One + NUMBERS.One));
+    const discountAmount = product.price * freeCount;
+    
+    result.discount += discountAmount;
+    result.freeItems.push({ name: item.name, quantity: freeCount });
+  }
+
+  #applyNormalPromotion(item, product, result) {
+    const freeItemAmount = product.price * item.freeQuantity;
+    
+    result.discount += freeItemAmount;
+    result.freeItems.push({ name: item.name, quantity: item.freeQuantity });
   }
 }
 

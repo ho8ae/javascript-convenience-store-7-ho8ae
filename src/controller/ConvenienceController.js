@@ -54,23 +54,28 @@ class ConvenienceController {
       await this.#processPromotions(items);
       
       const membershipApplied = await this.#retryUntilValidMembership();
-      
-      const promotionResult = this.#promotionDiscount.calculatePromotion(items);
-      const { totalAmount } = this.#receipt.calculatePurchase(items);
-      const amountAfterPromotion = totalAmount - promotionResult.discount;
-      const membershipDiscount = membershipApplied 
-        ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
-        : NUMBERS.Zero;
-
-      await this.#handleStockAndReceipt(items, {
-        promotionResult,
-        membershipDiscount,
-      });
+      const receiptData = await this.#calculatePurchaseData(items, membershipApplied);
+      await this.#handleStockAndReceipt(items, receiptData);
       
       return await this.#handleAdditionalPurchase();
     } catch (error) {
       return this.#handlePurchaseError(error);
     }
+  }
+
+  async #calculatePurchaseData(items, membershipApplied) {
+    const promotionResult = this.#promotionDiscount.calculatePromotion(items);
+    const { totalAmount } = this.#receipt.calculatePurchase(items);
+    const amountAfterPromotion = totalAmount - promotionResult.discount;
+    const membershipDiscount = await this.#calculateMembershipDiscount(
+      amountAfterPromotion,
+      membershipApplied
+    );
+
+    return {
+      promotionResult,
+      membershipDiscount
+    };
   }
 
   async #processInitialPurchase() {
@@ -81,18 +86,30 @@ class ConvenienceController {
 
   async #processPromotions(items) {
     for (const item of items) {
-      const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
-      if (!promoProduct) {
-        continue;
-      }
-
-      const promotion = this.#promotionRepository.findPromotion(promoProduct.promotion);
-      if (!promotion || !this.#promotionDiscount.isValidPromotion(promotion)) {
-        continue;
-      }
-
-      await this.#processPromotionItem(item, promoProduct, promotion);
+      await this.#processPromotionForItem(item);
     }
+  }
+
+  async #processPromotionForItem(item) {
+    const promoProduct = this.#productRepository.findProductWithPromotion(item.name);
+    if (!this.#isValidPromoProduct(promoProduct)) {
+      return;
+    }
+
+    const promotion = this.#promotionRepository.findPromotion(promoProduct.promotion);
+    if (!this.#isValidPromotion(promotion)) {
+      return;
+    }
+
+    await this.#processPromotionItem(item, promoProduct, promotion);
+  }
+
+  #isValidPromoProduct(promoProduct) {
+    return promoProduct !== null && promoProduct !== undefined;
+  }
+
+  #isValidPromotion(promotion) {
+    return promotion && this.#promotionDiscount.isValidPromotion(promotion);
   }
 
   async #processPromotionItem(item, promoProduct, promotion) {
@@ -218,7 +235,15 @@ class ConvenienceController {
   async #getMembershipInput() {
     const input = await InputView.readMembershipInput();
     InputValidator.validateMembershipInput(input);
+    OutputView.printNewLine(); 
     return input.toUpperCase() === INPUTS.Yes;
+  }
+
+  async #calculateMembershipDiscount(amountAfterPromotion, membershipApplied) {
+    if (!membershipApplied) {
+      return NUMBERS.Zero;
+    }
+    return this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion);
   }
 
   async #handleAdditionalPurchase() {
