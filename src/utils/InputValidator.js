@@ -106,8 +106,7 @@ class InputValidator {
   }
 
   static validateMembershipInput(input) {
-    const upperInput = input?.toUpperCase();
-    if (upperInput !== INPUTS.Yes && upperInput !== INPUTS.No) {
+    if (input !== INPUTS.Yes && input !== INPUTS.No) {
       throw new Error(ERROR_MESSAGES.InvalidYn);
     }
   }

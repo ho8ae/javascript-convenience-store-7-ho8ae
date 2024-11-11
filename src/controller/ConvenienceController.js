@@ -305,9 +305,15 @@ class ConvenienceController {
   }
 
   async #checkAdditionalPurchase() {
-    const input = await InputView.readAdditionalPurchaseInput();
-    InputValidator.validateMembershipInput(input);
-    return input.toUpperCase() === INPUTS.Yes;
+    while (true) {
+      try {
+        const input = await InputView.readAdditionalPurchaseInput();
+        InputValidator.validateMembershipInput(input);
+        return input === INPUTS.Yes;
+      } catch (error) {
+        OutputView.print(error.message);
+      }
+    }
   }
 
   #handlePurchaseError(error) {
