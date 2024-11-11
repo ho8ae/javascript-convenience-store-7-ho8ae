@@ -7,35 +7,58 @@ import {
   NUMBERS 
 } from '../constants/index.js';
 
+const getStockText = (quantity) => {
+  if (quantity === NUMBERS.Zero) {
+    return DISPLAY.OutOfStock;
+  }
+  return `${quantity}${DISPLAY.StockUnit}`;
+};
+
+const getPromotionText = (promotion) => {
+  if (!promotion) {
+    return STRING_PATTERNS.Empty;
+  }
+  return `${STRING_PATTERNS.Space}${promotion}`;
+};
+
+const getFormattedAmount = (amount) => {
+  if (!amount) {
+    return String(NUMBERS.Zero);
+  }
+  return amount;
+};
+
 const OutputView = {
   print(message) {
     MissionUtils.Console.print(message);
   },
 
+  printNewLine() {
+    this.print(STRING_PATTERNS.Empty);
+  },
+
   printProducts(products) {
     this.print(VIEW_MESSAGES.Welcome);
     this.print(VIEW_MESSAGES.CurrentProducts);
+    
 
     products.forEach((product) => {
-      const stockText = product.quantity === NUMBERS.Zero 
-        ? DISPLAY.OutOfStock 
-        : `${product.quantity}${DISPLAY.StockUnit}`;
-      const promotionText = product.promotion 
-        ? `${STRING_PATTERNS.Space}${product.promotion}` 
-        : STRING_PATTERNS.Empty;
+      const stockText = getStockText(product.quantity);
+      const promotionText = getPromotionText(product.promotion);
 
       this.print(
         `- ${product.name} ${product.price.toLocaleString()}${STRING_PATTERNS.Won} ${stockText}${promotionText}`
       );
     });
-    this.print(STRING_PATTERNS.Empty);
+    this.printNewLine();
   },
+
   printReceipt(receipt) {
     this.print(RECEIPT_TEMPLATE.Header);
     this.print(RECEIPT_TEMPLATE.ProductHeader);
 
     receipt.items.forEach((item) => {
-      const formattedAmount = item.formattedAmount || String(NUMBERS.Zero);
+      const formattedAmount = getFormattedAmount(item.formattedAmount);
       this.print(`${item.name}\t\t${item.quantity}\t${formattedAmount}`);
     });
 
@@ -52,11 +75,19 @@ const OutputView = {
     );
 
     this.print(RECEIPT_TEMPLATE.Footer);
-    this.print(`${RECEIPT_TEMPLATE.TotalAmount}\t\t${totalQuantity}\t${receipt.formattedTotalAmount || String(NUMBERS.Zero)}`);
-    this.print(`${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${receipt.formattedPromotionDiscount || String(NUMBERS.Zero)}`);
-    this.print(`${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${receipt.formattedMembershipDiscount || String(NUMBERS.Zero)}`);
-    this.print(`${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${receipt.formattedFinalAmount || String(NUMBERS.Zero)}`);
-    this.print(STRING_PATTERNS.Empty);  // 영수증 마지막에 빈 줄 추가
+    this.print(
+      `${RECEIPT_TEMPLATE.TotalAmount}\t\t${totalQuantity}\t${getFormattedAmount(receipt.formattedTotalAmount)}`
+    );
+    this.print(
+      `${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${getFormattedAmount(receipt.formattedPromotionDiscount)}`
+    );
+    this.print(
+      `${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${getFormattedAmount(receipt.formattedMembershipDiscount)}`
+    );
+    this.print(
+      `${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${getFormattedAmount(receipt.formattedFinalAmount)}`
+    );
+    this.printNewLine();
   }
 };
 
