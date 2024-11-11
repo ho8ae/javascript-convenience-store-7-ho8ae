@@ -302,26 +302,28 @@ class ConvenienceController {
 
   async handleStockAndReceipt(items, { promotionResult, membershipDiscount }) {
     const purchaseItems = items.map((item) => {
-      if (item.suggestedPurchase) {
+      // 프로모션 제안으로 추가 구매한 경우가 아닐 때는 원래 수량 그대로 표시
+      if (!item.suggestedPurchase) {
         return {
           ...item,
-          quantity: item.originQuantity || item.quantity, // 원래 수량 사용
+          quantity: item.quantity  // 원래 구매 수량 유지
         };
       }
-
+  
+      // 프로모션 제안으로 추가 구매한 경우
       return {
         ...item,
-        quantity: item.quantity - (item.freeQuantity || 0),
+        quantity: item.originQuantity || item.quantity
       };
     });
-
+  
     const receipt = this.receipt.generateReceipt(
       purchaseItems,
       promotionResult.freeItems,
       promotionResult.discount,
       membershipDiscount,
     );
-
+  
     this.productInventory.decreaseStock(items);
     OutputView.printReceipt(receipt);
   }
