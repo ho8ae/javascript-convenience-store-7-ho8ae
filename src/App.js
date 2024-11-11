@@ -8,14 +8,7 @@ class App {
   }
 
   async run() {
-    try {
-      await this.#controller.start();
-    } catch (error) {
-      if (error.message === "NO INPUT") {
-        return;
-      }
-      throw error;
-    }
+    await this.#controller.start();
   }
 }
 
