@@ -126,10 +126,18 @@ class ConvenienceController {
   }
 
   async #handleOneItemPromotion(item, promoProduct, promotion) {
-    const answer = await InputView.readPromotionAddQuestion(item.name);
-    OutputView.print(STRING_PATTERNS.Empty);
-    return this.#processPromotionAnswer(answer, item, promoProduct, promotion);
+    while (true) {
+      try {
+        const answer = await InputView.readPromotionAddQuestion(item.name);
+        InputValidator.validateMembershipInput(answer);  
+  
+        return this.#processPromotionAnswer(answer, item, promoProduct, promotion);
+      } catch (error) {
+        OutputView.print(error.message);
+      }
+    }
   }
+  
 
   #processPromotionAnswer(answer, item, promoProduct, promotion) {
     if (answer.toUpperCase() === INPUTS.Yes) {
@@ -176,17 +184,23 @@ class ConvenienceController {
   }
 
   async #handlePromotionConfirmation(item, promoProduct, promotion, result) {
-    const answer = await InputView.readPromotionWarning(
-      item.name,
-      result.nonPromoQuantity
-    );
-    OutputView.print(STRING_PATTERNS.Empty);
-
-    if (answer.toUpperCase() !== INPUTS.Yes) {
-      return this.#adjustPromotionQuantity(item, promoProduct, promotion, result);
+    while (true) {
+      try {
+        const answer = await InputView.readPromotionWarning(
+          item.name,
+          result.nonPromoQuantity
+        );
+        InputValidator.validateMembershipInput(answer);  // OutputView.print(STRING_PATTERNS.Empty) 제거
+  
+        if (answer.toUpperCase() !== INPUTS.Yes) {
+          return this.#adjustPromotionQuantity(item, promoProduct, promotion, result);
+        }
+        Object.assign(item, result);
+        return item;
+      } catch (error) {
+        OutputView.print(error.message);
+      }
     }
-    Object.assign(item, result);
-    return item;
   }
 
   #adjustPromotionQuantity(item, promoProduct, promotion, result) {
