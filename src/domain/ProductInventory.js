@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES, NUMBERS } from '../constants/index.js';
+
 class ProductInventory {
   #productRepository;
   #promotionRepository;
@@ -23,41 +25,37 @@ class ProductInventory {
     this.initializeStock();
   }
 
-  // 총 재고 조회 메서드 추가
   getStock(name) {
     return this.getTotalStock(name);
   }
 
   decreaseStock(items) {
     items.forEach((item) => {
-      // 총 재고 확인
       const totalStock = this.getTotalStock(item.name);
       if (item.quantity > totalStock) {
-        throw new Error("[ERROR] 재고 수량을 초과하여 구매할 수 없습니다.");
+        throw new Error(ERROR_MESSAGES.ExceededStock);
       }
 
       const promoKey = this.#createInventoryKey(item.name, true);
       const normalKey = this.#createInventoryKey(item.name, false);
 
-      let promoStock = this.#inventory.get(promoKey) || 0;
-      let normalStock = this.#inventory.get(normalKey) || 0;
+      let promoStock = this.#inventory.get(promoKey) || NUMBERS.Zero;
+      let normalStock = this.#inventory.get(normalKey) || NUMBERS.Zero;
       let remainingQuantity = item.quantity;
 
-      // 프로모션 재고 우선 사용
-      if (promoStock > 0) {
+      if (promoStock > NUMBERS.Zero) {
         const quantityFromPromo = Math.min(remainingQuantity, promoStock);
         promoStock -= quantityFromPromo;
         remainingQuantity -= quantityFromPromo;
         this.#productRepository.updateStock(item.name, quantityFromPromo, true);
       }
 
-      // 남은 수량은 일반 재고에서 차감
-      if (remainingQuantity > 0) {
+      if (remainingQuantity > NUMBERS.Zero) {
         if (normalStock >= remainingQuantity) {
           normalStock -= remainingQuantity;
           this.#productRepository.updateStock(item.name, remainingQuantity, false);
         } else {
-          throw new Error("[ERROR] 재고 수량을 초과하여 구매할 수 없습니다.");
+          throw new Error(ERROR_MESSAGES.ExceededStock);
         }
       }
 
@@ -75,11 +73,11 @@ class ProductInventory {
   }
 
   getPromotionStock(name) {
-    return this.#inventory.get(this.#createInventoryKey(name, true)) || 0;
+    return this.#inventory.get(this.#createInventoryKey(name, true)) || NUMBERS.Zero;
   }
 
   getNormalStock(name) {
-    return this.#inventory.get(this.#createInventoryKey(name, false)) || 0;
+    return this.#inventory.get(this.#createInventoryKey(name, false)) || NUMBERS.Zero;
   }
 }
 

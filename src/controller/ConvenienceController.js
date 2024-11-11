@@ -7,6 +7,13 @@ import MembershipDiscount from "../domain/MembershipDiscount.js";
 import Receipt from "../domain/Receipt.js";
 import InputValidator from "../utils/InputValidator.js";
 import ProductInventory from "../domain/ProductInventory.js";
+import { 
+  PROMOTION, 
+  INPUTS, 
+  NUMBERS,
+  STRING_PATTERNS
+} from '../constants/index.js';
+
 class ConvenienceController {
   #productRepository;
   #promotionRepository;
@@ -52,12 +59,13 @@ class ConvenienceController {
           ? this.#promotionRepository.findPromotion(promoProduct.promotion)
           : null;
   
-        if (promotion && this.#promotionDiscount.isValidPromotion(promotion)) {  // 프로모션 기간 체크 추가
-          // MD추천상품과 반짝할인 모두 1+1 처리
-          if ((promoProduct.promotion === "MD추천상품" || promoProduct.promotion === "반짝할인") && item.quantity === 1) {
-            const answer = await InputView.readPromotionAddQuestion(item.name, 1);
-            if (answer.toUpperCase() === "Y") {
-              item.quantity = 2; // 총 2개로 수정 (1개 구매 + 1개 증정)
+        if (promotion && this.#promotionDiscount.isValidPromotion(promotion)) {
+          if ((promoProduct.promotion === PROMOTION.MdRecommendation || 
+               promoProduct.promotion === PROMOTION.FlashSale) && 
+              item.quantity === NUMBERS.One) {
+            const answer = await InputView.readPromotionAddQuestion(item.name, NUMBERS.One);
+            if (answer.toUpperCase() === INPUTS.Yes) {
+              item.quantity = NUMBERS.One + NUMBERS.One;
               const result = this.#promotionDiscount.calculateNPlusK(
                 item.quantity,
                 promoProduct.quantity,
@@ -67,13 +75,12 @@ class ConvenienceController {
               );
               Object.assign(item, result);
             } else {
-              item.quantity = 1; // 1개만 구매
-              item.promoQuantity = 1;
-              item.normalQuantity = 0;
-              item.freeQuantity = 0;
+              item.quantity = NUMBERS.One;
+              item.promoQuantity = NUMBERS.One;
+              item.normalQuantity = NUMBERS.Zero;
+              item.freeQuantity = NUMBERS.Zero;
             }
           } else {
-            // 2+1 등 다른 프로모션 처리
             const result = this.#promotionDiscount.calculateNPlusK(
               item.quantity,
               promoProduct.quantity,
@@ -87,7 +94,7 @@ class ConvenienceController {
                 item.name,
                 result.nonPromoQuantity
               );
-              if (answer.toUpperCase() !== "Y") {
+              if (answer.toUpperCase() !== INPUTS.Yes) {
                 item.quantity -= result.nonPromoQuantity;
                 const newResult = this.#promotionDiscount.calculateNPlusK(
                   item.quantity,
@@ -113,7 +120,7 @@ class ConvenienceController {
       const amountAfterPromotion = totalAmount - promotionResult.discount;
       const membershipDiscount = membershipApplied 
         ? this.#membershipDiscount.calculateDiscountAmount(amountAfterPromotion)
-        : 0;
+        : NUMBERS.Zero;
   
       const receipt = this.#receipt.generateReceipt(
         items,
@@ -132,7 +139,7 @@ class ConvenienceController {
       }
   
     } catch (error) {
-      if (error.message === "NO INPUT") {
+      if (error.message === STRING_PATTERNS.NoInput) {
         return;
       }
       OutputView.print(error.message);
@@ -151,13 +158,13 @@ class ConvenienceController {
   async #getMembershipInput() {
     const input = await InputView.readMembershipInput();
     InputValidator.validateMembershipInput(input);
-    return input.toUpperCase() === "Y";
+    return input.toUpperCase() === INPUTS.Yes;
   }
 
   async #checkAdditionalPurchase() {
     const input = await InputView.readAdditionalPurchaseInput();
     InputValidator.validateMembershipInput(input);
-    return input.toUpperCase() === "Y";
+    return input.toUpperCase() === INPUTS.Yes;
   }
 }
 

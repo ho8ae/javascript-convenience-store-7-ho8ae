@@ -1,3 +1,5 @@
+import { NUMBERS } from '../constants/index.js';
+
 class Receipt {
   #productRepository;
 
@@ -18,7 +20,10 @@ class Receipt {
       };
     });
 
-    const totalAmount = purchaseItems.reduce((sum, item) => sum + item.amount, 0);
+    const totalAmount = purchaseItems.reduce(
+      (sum, item) => sum + item.amount, 
+      NUMBERS.Zero
+    );
 
     return {
       items: purchaseItems,

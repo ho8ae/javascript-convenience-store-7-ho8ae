@@ -1,47 +1,44 @@
+import { ERROR_MESSAGES, STRING_PATTERNS, NUMBERS,INPUTS } from '../constants/index.js';
+
 class InputValidator {
   static isValidPurchaseFormat(input) {
-    const itemPattern = /^\[([^\-\]]+)-([1-9]\d*)\]$/;
-    const items = input.split(",");
+    const items = input.split(STRING_PATTERNS.Comma);
 
     return items.every((item) => {
       const trimmedItem = item.trim();
-      return itemPattern.test(trimmedItem);
+      return STRING_PATTERNS.ProductInputRegex.test(trimmedItem);
     });
   }
 
   static validatePurchaseFormat(input) {
     if (!this.isValidPurchaseFormat(input)) {
-      throw new Error(
-        "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요."
-      );
+      throw new Error(ERROR_MESSAGES.InvalidFormat);
     }
   }
 
   static parseInput(input) {
-    return input.split(",").map((item) => {
+    return input.split(STRING_PATTERNS.Comma).map((item) => {
       const trimmedItem = item.trim();
-      const firstHyphenIndex = trimmedItem.indexOf("-");
-      const lastHyphenIndex = trimmedItem.lastIndexOf("-");
+      const firstHyphenIndex = trimmedItem.indexOf(STRING_PATTERNS.Hyphen);
+      const lastHyphenIndex = trimmedItem.lastIndexOf(STRING_PATTERNS.Hyphen);
 
       if (firstHyphenIndex !== lastHyphenIndex) {
-        throw new Error("[ERROR] 잘못된 입력입니다. 다시 입력해 주세요.");
+        throw new Error(ERROR_MESSAGES.InvalidInput);
       }
 
-      const matches = trimmedItem.match(/^\[([^\-\]]+)-(-?\d*\.?\d*)\]$/);
+      const matches = trimmedItem.match(STRING_PATTERNS.ProductInputRegex);
 
       if (!matches) {
-        throw new Error(
-          "[ERROR] 올바르지 않은 형식으로 입력했습니다. 다시 입력해 주세요."
-        );
+        throw new Error(ERROR_MESSAGES.InvalidFormat);
       }
 
-      const quantity = Number(matches[2]);
-      if (quantity <= 0 || !Number.isInteger(quantity)) {
-        throw new Error("[ERROR] 잘못된 입력입니다. 다시 입력해 주세요.");
+      const quantity = Number(matches[NUMBERS.SecondMatch]);
+      if (quantity <= NUMBERS.Zero || !Number.isInteger(quantity)) {
+        throw new Error(ERROR_MESSAGES.InvalidInput);
       }
 
       return {
-        name: matches[1].trim(),
+        name: matches[NUMBERS.FirstMatch].trim(),
         quantity,
       };
     });
@@ -51,10 +48,10 @@ class InputValidator {
     try {
       this.parseInput(input);
     } catch (error) {
-      if (error.message.includes("잘못된 입력입니다")) {
+      if (error.message.includes(ERROR_MESSAGES.InvalidInput)) {
         throw error;
       }
-      throw new Error("[ERROR] 잘못된 입력입니다. 다시 입력해 주세요.");
+      throw new Error(ERROR_MESSAGES.InvalidInput);
     }
   }
 
@@ -63,9 +60,7 @@ class InputValidator {
 
     products.forEach(({ name }) => {
       if (!productRepository.hasProduct(name)) {
-        throw new Error(
-          "[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요."
-        );
+        throw new Error(ERROR_MESSAGES.InvalidProduct);
       }
     });
   }
@@ -76,19 +71,16 @@ class InputValidator {
     products.forEach(({ name, quantity }) => {
       const totalStock = productRepository.getTotalStock(name);
       if (quantity > totalStock) {
-        throw new Error(
-          "[ERROR] 재고 수량을 초과하여 구매할 수 없습니다. 다시 입력해 주세요."
-        );
+        throw new Error(ERROR_MESSAGES.ExceededStock);
       }
     });
   }
 
   static validateMembershipInput(input) {
     const upperInput = input?.toUpperCase();
-    if (upperInput !== "Y" && upperInput !== "N") {
-      throw new Error("[ERROR] Y 또는 N만 입력 가능합니다.");
+    if (upperInput !== INPUTS.Yes && upperInput !== INPUTS.No) {
+      throw new Error(ERROR_MESSAGES.InvalidYn);
     }
   }
 }
-
 export default InputValidator;

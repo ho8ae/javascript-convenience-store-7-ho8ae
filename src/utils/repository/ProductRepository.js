@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import Product from "../../domain/Product.js";
+import { ERROR_MESSAGES, STRING_PATTERNS } from "../../constants/index.js";
 
 class ProductRepository {
   #filePath = "public/products.md";
@@ -16,9 +17,9 @@ class ProductRepository {
 
   loadProducts(path = this.#filePath) {
     try {
-      const content = readFileSync(path, "utf8");
+      const content = readFileSync(path, STRING_PATTERNS.FileEncoding);
       const lines = content
-        .split("\n")
+        .split(STRING_PATTERNS.NewLine)
         .slice(1)
         .filter((line) => line.trim());
 
@@ -36,8 +37,8 @@ class ProductRepository {
 
       return this.#products;
     } catch (error) {
-      if (error.message.startsWith("[ERROR]")) throw error;
-      throw new Error("[ERROR] 상품 정보를 불러오는데 실패했습니다.");
+      if (error.message.startsWith(STRING_PATTERNS.ErrorPrefix)) throw error;
+      throw new Error(ERROR_MESSAGES.LoadProductFail);
     }
   }
 
@@ -48,7 +49,7 @@ class ProductRepository {
   findProduct(name) {
     const product = this.#products.find((p) => p.name === name);
     if (!product) {
-      throw new Error("[ERROR] 존재하지 않는 상품입니다. 다시 입력해 주세요.");
+      throw new Error(ERROR_MESSAGES.InvalidProduct);
     }
     return product;
   }

@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES, NUMBERS,STRING_PATTERNS } from '../constants/index.js';
+
 class Product {
   #name;
   #price;
@@ -29,14 +31,14 @@ class Product {
   }
 
   validateProduct(name, price, quantity) {
-    if (!name || name.trim() === "") {
-      throw new Error("[ERROR] 상품명은 필수입니다.");
+    if (!name || name.trim() === STRING_PATTERNS.Empty) {
+      throw new Error(ERROR_MESSAGES.ProductNameRequired);
     }
-    if (isNaN(price) || price <= 0) {
-      throw new Error("[ERROR] 가격은 0보다 큰 숫자여야 합니다.");
+    if (isNaN(price) || price <= NUMBERS.Zero) {
+      throw new Error(ERROR_MESSAGES.InvalidPrice);
     }
-    if (isNaN(quantity) || quantity < 0) {
-      throw new Error("[ERROR] 수량은 0 이상의 숫자여야 합니다.");
+    if (isNaN(quantity) || quantity < NUMBERS.Zero) {
+      throw new Error(ERROR_MESSAGES.InvalidQuantity);
     }
   }
 }

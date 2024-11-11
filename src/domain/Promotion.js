@@ -1,3 +1,9 @@
+import { 
+  ERROR_MESSAGES, 
+  STRING_PATTERNS, 
+  NUMBERS 
+} from '../constants/index.js';
+
 class Promotion {
   #name;
   #buy;
@@ -14,6 +20,7 @@ class Promotion {
     this.#endDate = endDate;
   }
 
+  
   get name() {
     return this.#name;
   }
@@ -35,23 +42,23 @@ class Promotion {
   }
 
   validatePromotion(name, buy, get, startDate, endDate) {
-    if (!name || name.trim() === "") {
-      throw new Error("[ERROR] 프로모션명은 필수입니다.");
+    if (!name || name.trim() === STRING_PATTERNS.Empty) {
+      throw new Error(ERROR_MESSAGES.PromotionNameRequired);
     }
-    if (isNaN(buy) || buy <= 0) {
-      throw new Error("[ERROR] 구매 수량은 0보다 커야 합니다.");
+    if (isNaN(buy) || buy <= NUMBERS.Zero) {
+      throw new Error(ERROR_MESSAGES.InvalidBuyCount);
     }
-    if (isNaN(get) || get <= 0) {
-      throw new Error("[ERROR] 증정 수량은 0보다 커야 합니다.");
+    if (isNaN(get) || get <= NUMBERS.Zero) {
+      throw new Error(ERROR_MESSAGES.InvalidGetCount);
     }
-    if (!this.isValidDateFormat(startDate) || !this.isValidDateFormat(endDate)) {
-      throw new Error("[ERROR] 날짜 형식이 올바르지 않습니다.");
+    if (!STRING_PATTERNS.DateFormatRegex.test(startDate) || 
+        !STRING_PATTERNS.DateFormatRegex.test(endDate)) {
+      throw new Error(ERROR_MESSAGES.InvalidDateFormat);
     }
   }
 
   isValidDateFormat(dateString) {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    return dateRegex.test(dateString);
+    return STRING_PATTERNS.DateFormatRegex.test(dateString);
   }
 }
 

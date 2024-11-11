@@ -1,4 +1,11 @@
 import { MissionUtils } from "@woowacourse/mission-utils";
+import { 
+  VIEW_MESSAGES, 
+  RECEIPT_TEMPLATE, 
+  DISPLAY, 
+  STRING_PATTERNS, 
+  NUMBERS 
+} from '../constants/index.js';
 
 class OutputView {
   static print(message) {
@@ -6,32 +13,35 @@ class OutputView {
   }
 
   static printProducts(products) {
-    this.print("안녕하세요. W편의점입니다.");
-    this.print("현재 보유하고 있는 상품입니다.\n");
+    this.print(VIEW_MESSAGES.Welcome);
+    this.print(VIEW_MESSAGES.CurrentProducts);
 
     products.forEach((product) => {
-      const stockText =
-        product.quantity === 0 ? "재고 없음" : `${product.quantity}개`;
-      const promotionText = product.promotion ? ` ${product.promotion}` : "";
+      const stockText = product.quantity === NUMBERS.Zero 
+        ? DISPLAY.OutOfStock 
+        : `${product.quantity}${DISPLAY.StockUnit}`;
+      const promotionText = product.promotion 
+        ? `${STRING_PATTERNS.Space}${product.promotion}` 
+        : STRING_PATTERNS.Empty;
 
       this.print(
-        `- ${product.name} ${product.price.toLocaleString()}원 ${stockText}${promotionText}`
+        `- ${product.name} ${product.price.toLocaleString()}${STRING_PATTERNS.Won} ${stockText}${promotionText}`
       );
     });
-    this.print("");
+    this.print(STRING_PATTERNS.Empty);
   }
 
   static printReceipt(receipt) {
-    this.print("\n==============W 편의점================");
-    this.print("상품명\t\t수량\t금액");
+    this.print(STRING_PATTERNS.NewLine + RECEIPT_TEMPLATE.Header);
+    this.print(RECEIPT_TEMPLATE.ProductHeader);
 
     receipt.items.forEach((item) => {
-      const formattedAmount = item.formattedAmount || "0"; // undefined 방지
+      const formattedAmount = item.formattedAmount || String(NUMBERS.Zero);
       this.print(`${item.name}\t\t${item.quantity}\t${formattedAmount}`);
     });
 
-    if (receipt.freeItems.length > 0) {
-      this.print("=============증\t정===============");
+    if (receipt.freeItems.length > NUMBERS.Zero) {
+      this.print(RECEIPT_TEMPLATE.FreeItemsHeader);
       receipt.freeItems.forEach((item) => {
         this.print(`${item.name}\t\t${item.quantity}`);
       });
@@ -39,14 +49,14 @@ class OutputView {
 
     const totalQuantity = receipt.items.reduce(
       (sum, item) => sum + item.quantity,
-      0
+      NUMBERS.Zero
     );
 
-    this.print("====================================");
-    this.print(`총구매액\t\t${totalQuantity}\t${receipt.formattedTotalAmount || "0"}`);
-    this.print(`행사할인\t\t\t-${receipt.formattedPromotionDiscount || "0"}`);
-    this.print(`멤버십할인\t\t\t-${receipt.formattedMembershipDiscount || "0"}`);
-    this.print(`내실돈\t\t\t ${receipt.formattedFinalAmount || "0"}`);
+    this.print(RECEIPT_TEMPLATE.Footer);
+    this.print(`${RECEIPT_TEMPLATE.TotalAmount}\t\t${totalQuantity}\t${receipt.formattedTotalAmount || String(NUMBERS.Zero)}`);
+    this.print(`${RECEIPT_TEMPLATE.PromotionDiscount}\t\t\t-${receipt.formattedPromotionDiscount || String(NUMBERS.Zero)}`);
+    this.print(`${RECEIPT_TEMPLATE.MembershipDiscount}\t\t\t-${receipt.formattedMembershipDiscount || String(NUMBERS.Zero)}`);
+    this.print(`${RECEIPT_TEMPLATE.FinalAmount}\t\t\t ${receipt.formattedFinalAmount || String(NUMBERS.Zero)}`);
   }
 }
 
