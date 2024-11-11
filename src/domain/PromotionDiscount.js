@@ -11,15 +11,19 @@ class PromotionDiscount {
   }
 
   calculateNPlusK(quantity, stockQuantity, buyCount, getCount, promotionName) {
-    if (this.#isOneToOnePromotion(promotionName, quantity)) {
-      return this.#getOneToOneResult();
+    // 재고가 충분해야만 프로모션이 가능하도록 조건 추가
+    if (
+      this.#isOneToOnePromotion(promotionName, quantity) &&
+      stockQuantity >= quantity + NUMBERS.One // 재고가 충분한 경우에만 프로모션 적용
+    ) {
+      return this.#getOneToOneResult(stockQuantity);
     }
 
     return this.#getNormalPromotionResult(
       quantity,
       stockQuantity,
       buyCount,
-      getCount,
+      getCount
     );
   }
 
@@ -31,7 +35,18 @@ class PromotionDiscount {
     );
   }
 
-  #getOneToOneResult() {
+  #getOneToOneResult(stockQuantity) {
+    // 재고가 1개 이상 있어야 프로모션을 진행할 수 있음
+    if (stockQuantity <= NUMBERS.One) {
+      return {
+        shouldSuggestMore: false,
+        promoQuantity: NUMBERS.Zero,
+        normalQuantity: NUMBERS.One,
+        freeQuantity: NUMBERS.Zero,
+        totalQuantity: NUMBERS.One,
+      };
+    }
+
     return {
       shouldSuggestMore: true,
       suggestQuantity: NUMBERS.One,
@@ -92,7 +107,7 @@ class PromotionDiscount {
     }
 
     const promotion = this.#promotionRepository.findPromotion(
-      product.promotion,
+      product.promotion
     );
     if (!this.#isValidPromotionRule(promotion)) {
       return;
@@ -110,7 +125,7 @@ class PromotionDiscount {
   }
 
   #applyPromotionDiscount(item, product, promotion, result) {
-    if (this.#isSpecialPromotion(promotion, item)) {
+    if (this.#isSpecialPromotion(promotion, item, product)) {
       this.#applySpecialPromotion(item, product, result);
       return;
     }
@@ -120,11 +135,13 @@ class PromotionDiscount {
     }
   }
 
-  #isSpecialPromotion(promotion, item) {
+  #isSpecialPromotion(promotion, item, product) {
+    // 재고가 충분한지 추가로 확인
     return (
       (promotion.name === PROMOTION.MdRecommendation ||
         promotion.name === PROMOTION.FlashSale) &&
-      item.quantity >= NUMBERS.One + NUMBERS.One
+      item.quantity >= NUMBERS.One + NUMBERS.One &&
+      product.quantity >= item.quantity + NUMBERS.One
     );
   }
 

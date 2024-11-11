@@ -97,7 +97,13 @@ class ConvenienceController {
     const promoProduct = this.#productRepository.findProductWithPromotion(
       item.name,
     );
+
+    // 프로모션 유효성과 재고 유효성 둘 다 확인해야 함
     if (!this.#isValidPromoProduct(promoProduct)) {
+      return;
+    }
+    if (promoProduct.quantity === 0) {
+      // 프로모션 재고가 없으면 프로모션 처리 중단
       return;
     }
 
@@ -112,7 +118,11 @@ class ConvenienceController {
   }
 
   #isValidPromoProduct(promoProduct) {
-    return promoProduct !== null && promoProduct !== undefined;
+    return (
+      promoProduct !== null &&
+      promoProduct !== undefined &&
+      promoProduct.quantity > 0
+    );
   }
 
   #isValidPromotion(promotion) {
@@ -208,7 +218,7 @@ class ConvenienceController {
           item.name,
           result.nonPromoQuantity,
         );
-        InputValidator.validateMembershipInput(answer); // OutputView.print(STRING_PATTERNS.Empty) 제거
+        InputValidator.validateMembershipInput(answer);
 
         if (answer.toUpperCase() !== INPUTS.Yes) {
           return this.#adjustPromotionQuantity(
