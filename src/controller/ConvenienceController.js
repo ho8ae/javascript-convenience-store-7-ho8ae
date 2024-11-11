@@ -149,7 +149,7 @@ class ConvenienceController {
       try {
         const answer = await InputView.readPromotionAddQuestion(item.name);
         InputValidator.validateMembershipInput(answer);
-
+        OutputView.printNewLine();
         return this.#processPromotionAnswer(
           answer,
           item,

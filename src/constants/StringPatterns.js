@@ -1,4 +1,4 @@
-export const STRING_PATTERNS = {
+export const STRING_PATTERNS = Object.freeze({
   // 구분자
   Comma: ',',
   Hyphen: '-',
@@ -35,4 +35,4 @@ export const STRING_PATTERNS = {
   AlignLeft: 'left',
   AlignRight: 'right',
   AlignCenter: 'center'
-};
+});

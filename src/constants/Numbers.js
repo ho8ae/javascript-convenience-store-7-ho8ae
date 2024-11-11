@@ -1,4 +1,4 @@
-export const NUMBERS = {
+export const NUMBERS = Object.freeze({
   // 기본값
   Zero: 0,
   One: 1,
@@ -39,4 +39,4 @@ export const NUMBERS = {
 
   // 영수증 정렬
   ReceiptColumnWidth: 8,
-};
+});

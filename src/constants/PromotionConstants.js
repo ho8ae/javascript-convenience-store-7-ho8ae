@@ -1,4 +1,4 @@
-export const PROMOTION = {
+export const PROMOTION = Object.freeze({
   MdRecommendation: 'MD추천상품',
   FlashSale: '반짝할인',
   Types: {
@@ -11,9 +11,9 @@ export const PROMOTION = {
       Get: 1,
     },
   },
-};
+});
 
-export const MEMBERSHIP = {
+export const MEMBERSHIP =Object.freeze({
   DiscountRate: 0.3,
   MaxDiscount: 8000,
-};
+});
